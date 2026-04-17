@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Materials Vault | LaunchPad OS{% endblock %}
+{% block meta_description %}Manage reusable application materials in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container">
+    <div class="app-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <p class="eyebrow text-primary mb-2">Materials Vault</p>
+        <h1 class="fw-semibold mb-2">Materials</h1>
+        <p class="text-muted mb-0">Store reusable drafts, notes, and links for future applications.</p>
+      </div>
+      <a class="btn btn-primary app-action" href="{{ url_for('materials.new') }}">
+        <i class="fa-solid fa-plus me-2"></i>Add material
+      </a>
+    </div>
+
+    {% if materials %}
+    <div class="app-card opportunity-card">
+      <div class="opportunity-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 fw-semibold mb-1">Saved materials</h2>
+          <p class="text-muted mb-0">{{ materials|length }} saved item{% if materials|length != 1 %}s{% endif %}</p>
+        </div>
+      </div>
+      <div class="table-responsive opportunity-table-wrap">
+        <table class="table opportunity-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Material</th>
+              <th scope="col">Type</th>
+              <th scope="col">Updated</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for material in materials %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ material.title }}</div>
+                {% if material.link %}
+                <a class="small opportunity-link" href="{{ material.link }}" target="_blank" rel="noopener">Open source link</a>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge app-badge app-badge-soft">{{ material.material_type|replace("_", " ") }}</span>
+              </td>
+              <td>{{ material.updated_at.strftime("%Y-%m-%d") }}</td>
+              <td class="text-end">
+                <div class="opportunity-actions d-flex justify-content-end gap-2">
+                  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('materials.detail', material_id=material.id) }}">View</a>
+                  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('materials.edit', material_id=material.id) }}">Edit</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="app-card empty-state text-center">
+      <div class="empty-state-icon mx-auto mb-3">
+        <i class="fa-solid fa-folder-open"></i>
+      </div>
+      <p class="eyebrow text-primary mb-2">Build your vault</p>
+      <h2 class="h4 fw-semibold">No materials yet.</h2>
+      <p class="text-muted mb-4">Add a resume, essay draft, recommendation note, or source link so your reusable application work stays organized.</p>
+      <a class="btn btn-primary app-action" href="{{ url_for('materials.new') }}">
+        <i class="fa-solid fa-plus me-2"></i>Add your first material
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

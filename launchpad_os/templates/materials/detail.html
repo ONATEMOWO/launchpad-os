@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ material.title }} | LaunchPad OS{% endblock %}
+{% block meta_description %}View a saved material in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container app-container-narrow">
+    <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+      <div>
+        <p class="eyebrow text-primary mb-2">Material Details</p>
+        <h1 class="fw-semibold mb-2">{{ material.title }}</h1>
+        <p class="text-muted mb-0">{{ material.material_type|replace("_", " ")|title }}</p>
+      </div>
+      <div class="detail-actions d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" href="{{ url_for('materials.index') }}">Back to vault</a>
+        <a class="btn btn-primary" href="{{ url_for('materials.edit', material_id=material.id) }}">Edit</a>
+      </div>
+    </div>
+
+    <div class="app-card detail-card">
+      <div class="detail-summary">
+        <span class="badge app-badge app-badge-soft">{{ material.material_type|replace("_", " ") }}</span>
+      </div>
+
+      <div class="detail-grid">
+        <div>
+          <p class="detail-label">Last updated</p>
+          <p class="detail-value">{{ material.updated_at.strftime("%Y-%m-%d") }}</p>
+        </div>
+        <div>
+          <p class="detail-label">Created</p>
+          <p class="detail-value">{{ material.created_at.strftime("%Y-%m-%d") }}</p>
+        </div>
+        <div class="detail-grid-full">
+          <p class="detail-label">Link</p>
+          {% if material.link %}
+          <a class="opportunity-link" href="{{ material.link }}" target="_blank" rel="noopener">{{ material.link }}</a>
+          {% else %}
+          <p class="text-muted mb-0">No link saved yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="detail-notes">
+        <h2 class="h5 fw-semibold mb-3">Content</h2>
+        <p class="mb-0">{{ material.content }}</p>
+      </div>
+
+      <div class="detail-notes">
+        <h2 class="h5 fw-semibold mb-3">Notes</h2>
+        {% if material.notes %}
+        <p class="mb-0">{{ material.notes }}</p>
+        {% else %}
+        <p class="text-muted mb-0">No notes yet. Use notes for version history, next edits, or where this material is useful.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

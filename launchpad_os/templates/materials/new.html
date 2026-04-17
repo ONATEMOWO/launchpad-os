@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Add Material | LaunchPad OS{% endblock %}
+{% block meta_description %}Add reusable application material to LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container app-container-narrow">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+          <div>
+            <p class="eyebrow text-primary mb-2">Materials Vault</p>
+            <h1 class="fw-semibold mb-2">Add material</h1>
+            <p class="text-muted mb-0">Save reusable drafts, notes, and reference links for future applications.</p>
+          </div>
+          <a class="btn btn-outline-secondary" href="{{ url_for('materials.index') }}">Back to vault</a>
+        </div>
+
+        <div class="app-card form-card">
+          <form method="POST" action="" role="form">
+            {{ form.csrf_token }}
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">Material details</h2>
+              <p class="text-muted mb-0">Name the material and choose the type that best describes it.</p>
+            </div>
+            <div class="row g-4">
+              <div class="col-md-8">
+                {{ form.title.label(class_="form-label") }}
+                {{ form.title(placeholder="Resume notes for summer applications", class_="form-control") }}
+              </div>
+              <div class="col-md-4">
+                {{ form.material_type.label(class_="form-label") }}
+                {{ form.material_type(class_="form-select") }}
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">Reusable content</h2>
+              <p class="text-muted mb-0">Paste draft text, reminders, or the important details you want to reuse.</p>
+            </div>
+            <div class="row g-4">
+              <div class="col-12">
+                {{ form.content.label(class_="form-label") }}
+                {{ form.content(placeholder="Draft text, bullet points, or requirements", class_="form-control", rows="6") }}
+              </div>
+              <div class="col-12">
+                {{ form.link.label(class_="form-label") }}
+                {{ form.link(placeholder="https://example.com/material", class_="form-control") }}
+              </div>
+              <div class="col-12">
+                {{ form.notes.label(class_="form-label") }}
+                {{ form.notes(placeholder="Version notes, next edits, or where this material is useful", class_="form-control", rows="4") }}
+              </div>
+            </div>
+            <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
+              <a class="btn btn-outline-secondary" href="{{ url_for('materials.index') }}">Cancel</a>
+              <button class="btn btn-primary" type="submit">Save material</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
