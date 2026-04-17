@@ -9,7 +9,7 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import login_required, login_user, logout_user
+from flask_login import current_user, login_required, login_user, logout_user
 
 from launchpad_os.extensions import login_manager
 from launchpad_os.public.forms import LoginForm
@@ -26,21 +26,36 @@ def load_user(user_id):
     return User.get_by_id(int(user_id))
 
 
-@blueprint.route("/", methods=["GET", "POST"])
+def _handle_login(form):
+    """Validate the login form and redirect to the workspace."""
+    if form.validate_on_submit():
+        login_user(form.user)
+        flash("You are logged in.", "success")
+        redirect_url = request.args.get("next") or url_for("user.members")
+        return redirect(redirect_url)
+    flash_errors(form)
+    return None
+
+
+@blueprint.route("/")
 def home():
     """Home page."""
-    form = LoginForm(request.form)
     current_app.logger.info("Hello from the home page!")
-    # Handle logging in
+    return render_template("public/home.html")
+
+
+@blueprint.route("/login/", methods=["GET", "POST"])
+def login():
+    """Login page."""
+    if current_user and current_user.is_authenticated:
+        return redirect(url_for("user.members"))
+
+    form = LoginForm(request.form)
     if request.method == "POST":
-        if form.validate_on_submit():
-            login_user(form.user)
-            flash("You are logged in.", "success")
-            redirect_url = request.args.get("next") or url_for("user.members")
-            return redirect(redirect_url)
-        else:
-            flash_errors(form)
-    return render_template("public/home.html", form=form)
+        response = _handle_login(form)
+        if response is not None:
+            return response
+    return render_template("public/login.html", form=form)
 
 
 @blueprint.route("/logout/")
@@ -63,8 +78,8 @@ def register():
             password=form.password.data,
             active=True,
         )
-        flash("Thank you for registering. You can now log in.", "success")
-        return redirect(url_for("public.home"))
+        flash("Thank you for registering. You can now sign in.", "success")
+        return redirect(url_for("public.login"))
     else:
         flash_errors(form)
     return render_template("public/register.html", form=form)
@@ -72,6 +87,5 @@ def register():
 
 @blueprint.route("/about/")
 def about():
-    """About page."""
-    form = LoginForm(request.form)
-    return render_template("public/about.html", form=form)
+    """Project overview page."""
+    return render_template("public/about.html")

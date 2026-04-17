@@ -15,9 +15,9 @@ class TestLoggingIn:
 
     def test_can_log_in_returns_200(self, user, testapp):
         """Login successful."""
-        # Goes to homepage
-        res = testapp.get("/")
-        # Fills out login form in navbar
+        # Goes to login page
+        res = testapp.get(url_for("public.login"))
+        # Fills out login form
         form = res.forms["loginForm"]
         form["username"] = user.username
         form["password"] = "myprecious"
@@ -27,8 +27,8 @@ class TestLoggingIn:
 
     def test_sees_alert_on_log_out(self, user, testapp):
         """Show alert on logout."""
-        res = testapp.get("/")
-        # Fills out login form in navbar
+        res = testapp.get(url_for("public.login"))
+        # Fills out login form
         form = res.forms["loginForm"]
         form["username"] = user.username
         form["password"] = "myprecious"
@@ -40,8 +40,8 @@ class TestLoggingIn:
 
     def test_sees_error_message_if_password_is_incorrect(self, user, testapp):
         """Show error if password is incorrect."""
-        # Goes to homepage
-        res = testapp.get("/")
+        # Goes to login page
+        res = testapp.get(url_for("public.login"))
         # Fills out login form, password incorrect
         form = res.forms["loginForm"]
         form["username"] = user.username
@@ -53,8 +53,8 @@ class TestLoggingIn:
 
     def test_sees_error_message_if_username_doesnt_exist(self, user, testapp):
         """Show error if username doesn't exist."""
-        # Goes to homepage
-        res = testapp.get("/")
+        # Goes to login page
+        res = testapp.get(url_for("public.login"))
         # Fills out login form, password incorrect
         form = res.forms["loginForm"]
         form["username"] = "unknown"
@@ -71,10 +71,8 @@ class TestRegistering:
     def test_can_register(self, user, testapp):
         """Register a new user."""
         old_count = len(User.query.all())
-        # Goes to homepage
-        res = testapp.get("/")
-        # Clicks Create Account button
-        res = res.click("Create account")
+        # Goes to registration page
+        res = testapp.get(url_for("public.register"))
         # Fills out the form
         form = res.forms["registerForm"]
         form["username"] = "foobar"

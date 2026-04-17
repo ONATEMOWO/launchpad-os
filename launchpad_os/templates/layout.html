@@ -11,19 +11,15 @@
     <meta charset="utf-8" />
 
     <link rel="shortcut icon" href="{{static_url_for('static', filename='build/favicon.ico') }}">
-    <title>
-      {% block page_title %} 
-      LaunchPad OS
-       {% endblock %}
-    </title>
+    <title>{% block page_title %}LaunchPad OS{% endblock %}</title>
     <meta
       name="description"
-      content="{% block meta_description %}{% endblock %}"
+      content="{% block meta_description %}LaunchPad OS is a student application workspace for internships, scholarships, and research opportunities.{% endblock %}"
     />
     <meta name="author" content="{% block meta_author %}{% endblock %}" />
 
     <!-- Mobile viewport optimized: h5bp.com/viewport -->
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link
       rel="stylesheet"
@@ -34,15 +30,15 @@
     {% block css %}{% endblock %}
   </head>
   <body class="{% block body_class %}{% endblock %}">
-    {% block body %} {% with form=form %} {% include "nav.html" %} {% endwith %}
+    {% block body %} {% include "nav.html" %}
 
     <header>{% block header %}{% endblock %}</header>
 
     <main role="main">
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
       messages %}
-      <div class="row">
-        <div class="col-md-12">
+      <div class="container mt-3">
+        <div class="col-12">
           {% for category, message in messages %}
           <div class="alert alert-{{ category }}">
             <a class="close" title="Close" href="#" data-bs-dismiss="alert"
@@ -55,7 +51,7 @@
         </div>
         <!-- end col-md -->
       </div>
-      <!-- end row -->
+      <!-- end container -->
       {% endif %} {% endwith %} {% block content %}{% endblock %}
     </main>
 
@@ -68,4 +64,3 @@
     {% endblock %}
   </body>
 </html>
-

@@ -1,12 +1,43 @@
-
 {% extends "layout.html" %}
 
-{% block content %}
-<div class="container">
-    <h1 class="mt-5">About</h1>
-    <div class="row">
-      <p class="lead">This template was created by <a href="http://github.com/sloria/">Steven Loria</a> for use with the <a href="http://github.com/audreyr/cookiecutter/">cookiecutter</a> package by <a href="http://github.com/audreyr/">Audrey Roy</a>.</p>
-    </div>
-</div>
-{% endblock %}
+{% block page_title %}Project Overview | LaunchPad OS{% endblock %}
+{% block meta_description %}Learn how LaunchPad OS helps students manage applications, materials, and requirements for competitive opportunities.{% endblock %}
 
+{% block content %}
+<section class="page-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <p class="text-uppercase text-primary fw-semibold mb-2">Project Overview</p>
+        <h1 class="fw-semibold mb-3">A practical workspace for student applications.</h1>
+        <p class="lead text-muted">
+          LaunchPad OS is a senior seminar project focused on helping students manage the work behind internships, scholarships, and research opportunities.
+        </p>
+        <p>
+          The public experience is intentionally simple: students can understand the purpose of the tool, create an account, and sign in to continue organizing their application materials.
+        </p>
+        <div class="row g-3 mt-4">
+          <div class="col-md-4">
+            <div class="feature-card h-100 border rounded p-3">
+              <h2 class="h5">Track</h2>
+              <p class="text-muted mb-0">Keep each opportunity, deadline, and status in one place.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="feature-card h-100 border rounded p-3">
+              <h2 class="h5">Prepare</h2>
+              <p class="text-muted mb-0">Connect resumes, essays, transcripts, and references to the work that needs them.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="feature-card h-100 border rounded p-3">
+              <h2 class="h5">Finish</h2>
+              <p class="text-muted mb-0">Use checklists to see what is complete and what still needs attention.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
