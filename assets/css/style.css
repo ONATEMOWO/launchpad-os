@@ -48,6 +48,10 @@ textarea {
   background: #f4f6f8;
 }
 
+.app-section-soft {
+  background: linear-gradient(180deg, #f8fbff 0%, #f4f6f8 100%);
+}
+
 .app-container {
   max-width: 1120px;
 }
@@ -76,7 +80,7 @@ textarea {
 .metric-card,
 .auth-card,
 .app-card {
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .feature-card,
@@ -110,6 +114,7 @@ textarea {
 
 .opportunity-table {
   --bs-table-hover-bg: #f8fbff;
+  min-width: 820px;
 }
 
 .opportunity-table thead th {
@@ -128,9 +133,27 @@ textarea {
   border-color: #edf0f3;
 }
 
+.opportunity-table td:first-child {
+  min-width: 16rem;
+  white-space: normal;
+}
+
+.opportunity-table td:last-child {
+  min-width: 13rem;
+}
+
+.opportunity-actions {
+  flex-wrap: wrap;
+}
+
+.opportunity-actions form {
+  margin: 0;
+}
+
 .opportunity-link {
   color: #0d6efd;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .opportunity-link:hover {
@@ -152,6 +175,105 @@ textarea {
 .status-badge {
   color: #495057;
   background-color: #eef1f4;
+}
+
+.status-saved {
+  color: #495057;
+  background-color: #eef1f4;
+}
+
+.status-planning {
+  color: #0d5abf;
+  background-color: #eaf3ff;
+}
+
+.status-in-progress {
+  color: #9a6a00;
+  background-color: #fff4d8;
+}
+
+.status-submitted {
+  color: #5b3aa5;
+  background-color: #f0eafa;
+}
+
+.status-accepted {
+  color: #198754;
+  background-color: #eaf7ef;
+}
+
+.status-rejected {
+  color: #b02a37;
+  background-color: #fbeaec;
+}
+
+.status-archived {
+  color: #6c757d;
+  background-color: #f1f3f5;
+}
+
+.opportunity-archived {
+  color: #6c757d;
+  background-color: #fbfcfd;
+}
+
+.opportunity-archived .fw-semibold {
+  color: #495057;
+}
+
+.archive-section {
+  margin-top: 2.5rem;
+}
+
+.archived-card {
+  box-shadow: 0 0.75rem 1.75rem rgba(33, 37, 41, 0.04);
+}
+
+.detail-card {
+  padding: 2rem;
+}
+
+.detail-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.detail-grid-full {
+  grid-column: 1 / -1;
+}
+
+.detail-label {
+  margin-bottom: 0.35rem;
+  color: #6c757d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.detail-value {
+  margin-bottom: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.detail-notes {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #edf0f3;
+}
+
+.detail-notes p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .priority-low {
@@ -226,11 +348,81 @@ textarea {
   background-color: #f8f9fa;
 }
 
+.auth-section.app-section-soft {
+  display: flex;
+  min-height: calc(100vh - 64px);
+  align-items: center;
+}
+
+.auth-section.app-section-soft > .container {
+  width: 100%;
+}
+
 .auth-card {
   padding: 2rem;
   background-color: #ffffff;
   border: 1px solid #dee2e6;
   box-shadow: 0 1rem 2.5rem rgba(33, 37, 41, 0.08);
+}
+
+.overview-card {
+  padding: 2rem;
+}
+
+.password-toggle {
+  min-width: 4.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .page-section {
+    padding: 3rem 0;
+  }
+
+  .app-section,
+  .auth-section {
+    padding: 2rem 0 3rem;
+  }
+
+  .app-page-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .auth-card,
+  .form-card,
+  .detail-card,
+  .overview-card {
+    padding: 1.25rem;
+  }
+
+  .opportunity-card-header {
+    padding: 1rem;
+  }
+
+  .opportunity-actions {
+    justify-content: flex-start !important;
+  }
+
+  .empty-state {
+    padding: 2.25rem 1.25rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-actions,
+  .detail-actions .btn {
+    width: 100%;
+  }
+
+  .form-actions .btn,
+  .app-action {
+    width: 100%;
+  }
+
+  .navbar-nav .btn {
+    margin-top: 0.5rem;
+  }
 }
 
 /* footer */

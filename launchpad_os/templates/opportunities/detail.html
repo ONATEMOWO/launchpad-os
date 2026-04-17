@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ opportunity.title }} | LaunchPad OS{% endblock %}
+{% block meta_description %}View a tracked opportunity in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container app-container-narrow">
+    <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+      <div>
+        <p class="eyebrow text-primary mb-2">Opportunity Details</p>
+        <h1 class="fw-semibold mb-2">{{ opportunity.title }}</h1>
+        <p class="text-muted mb-0">{{ opportunity.organization }}</p>
+      </div>
+      <div class="detail-actions d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Back to list</a>
+        <a class="btn btn-primary" href="{{ url_for('opportunities.edit', opportunity_id=opportunity.id) }}">Edit</a>
+      </div>
+    </div>
+
+    <div class="app-card detail-card">
+      <div class="detail-summary">
+        <span class="badge app-badge app-badge-soft">{{ opportunity.category }}</span>
+        <span class="badge app-badge status-badge status-{{ opportunity.status|replace(' ', '-') }}">{{ opportunity.status }}</span>
+        <span class="badge app-badge priority-{{ opportunity.priority }}">{{ opportunity.priority }}</span>
+      </div>
+
+      <div class="detail-grid">
+        <div>
+          <p class="detail-label">Organization</p>
+          <p class="detail-value">{{ opportunity.organization }}</p>
+        </div>
+        <div>
+          <p class="detail-label">Deadline</p>
+          <p class="detail-value">
+            {% if opportunity.deadline %}
+            {{ opportunity.deadline.strftime("%Y-%m-%d") }}
+            {% else %}
+            No deadline set
+            {% endif %}
+          </p>
+        </div>
+        <div>
+          <p class="detail-label">Status</p>
+          <p class="detail-value text-capitalize">{{ opportunity.status }}</p>
+        </div>
+        <div>
+          <p class="detail-label">Priority</p>
+          <p class="detail-value text-capitalize">{{ opportunity.priority }}</p>
+        </div>
+        <div class="detail-grid-full">
+          <p class="detail-label">Link</p>
+          {% if opportunity.link %}
+          <a class="opportunity-link" href="{{ opportunity.link }}" target="_blank" rel="noopener">{{ opportunity.link }}</a>
+          {% else %}
+          <p class="text-muted mb-0">No link saved yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="detail-notes">
+        <h2 class="h5 fw-semibold mb-3">Notes</h2>
+        {% if opportunity.notes %}
+        <p class="mb-0">{{ opportunity.notes }}</p>
+        {% else %}
+        <p class="text-muted mb-0">No notes yet. Use this space for requirements, next steps, or reminders when you edit the opportunity.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

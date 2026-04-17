@@ -15,6 +15,9 @@ STATUS_CHOICES = [
     ("planning", "Planning"),
     ("in progress", "In progress"),
     ("submitted", "Submitted"),
+    ("accepted", "Accepted"),
+    ("rejected", "Rejected"),
+    ("archived", "Archived"),
 ]
 
 PRIORITY_CHOICES = [

@@ -16,12 +16,29 @@ blueprint = Blueprint(
 @login_required
 def index():
     """List current user's opportunities."""
-    opportunities = (
+    active_opportunities = (
         Opportunity.query.filter_by(user_id=current_user.id)
+        .filter(Opportunity.status != "archived")
         .order_by(Opportunity.created_at.desc())
         .all()
     )
-    return render_template("opportunities/index.html", opportunities=opportunities)
+    archived_opportunities = (
+        Opportunity.query.filter_by(user_id=current_user.id, status="archived")
+        .order_by(Opportunity.updated_at.desc())
+        .all()
+    )
+    return render_template(
+        "opportunities/index.html",
+        active_opportunities=active_opportunities,
+        archived_opportunities=archived_opportunities,
+    )
+
+
+def _get_owned_opportunity_or_404(opportunity_id):
+    """Return an opportunity owned by the current user."""
+    return Opportunity.query.filter_by(
+        id=opportunity_id, user_id=current_user.id
+    ).first_or_404()
 
 
 @blueprint.route("/new/", methods=["GET", "POST"])
@@ -46,3 +63,57 @@ def new():
     if form.errors:
         flash_errors(form)
     return render_template("opportunities/new.html", form=form)
+
+
+@blueprint.route("/<int:opportunity_id>/")
+@login_required
+def detail(opportunity_id):
+    """Show full opportunity details."""
+    opportunity = _get_owned_opportunity_or_404(opportunity_id)
+    return render_template("opportunities/detail.html", opportunity=opportunity)
+
+
+@blueprint.route("/<int:opportunity_id>/edit/", methods=["GET", "POST"])
+@login_required
+def edit(opportunity_id):
+    """Edit an existing opportunity."""
+    opportunity = _get_owned_opportunity_or_404(opportunity_id)
+    form = OpportunityForm(obj=opportunity)
+    if form.validate_on_submit():
+        opportunity.update(
+            title=form.title.data,
+            organization=form.organization.data,
+            category=form.category.data,
+            deadline=form.deadline.data,
+            status=form.status.data,
+            priority=form.priority.data,
+            link=form.link.data or None,
+            notes=form.notes.data or None,
+        )
+        flash("Opportunity updated.", "success")
+        return redirect(url_for("opportunities.index"))
+    if form.errors:
+        flash_errors(form)
+    return render_template(
+        "opportunities/edit.html", form=form, opportunity=opportunity
+    )
+
+
+@blueprint.route("/<int:opportunity_id>/archive/", methods=["POST"])
+@login_required
+def archive(opportunity_id):
+    """Archive an opportunity without deleting it."""
+    opportunity = _get_owned_opportunity_or_404(opportunity_id)
+    opportunity.update(status="archived")
+    flash("Opportunity archived.", "info")
+    return redirect(url_for("opportunities.index"))
+
+
+@blueprint.route("/<int:opportunity_id>/restore/", methods=["POST"])
+@login_required
+def restore(opportunity_id):
+    """Restore an archived opportunity to active planning work."""
+    opportunity = _get_owned_opportunity_or_404(opportunity_id)
+    opportunity.update(status="planning")
+    flash("Opportunity restored.", "success")
+    return redirect(url_for("opportunities.index"))

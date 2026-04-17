@@ -89,3 +89,173 @@ class TestOpportunityViews:
 
         assert own_opportunity.title in res
         assert other_opportunity.title not in res
+
+    def test_owner_can_view_detail_page(self, user, testapp, db):
+        """Owners can view full opportunity details."""
+        opportunity = OpportunityFactory(
+            user=user,
+            title="Research Fellowship",
+            organization="Science Center",
+            category="research",
+            status="planning",
+            priority="high",
+            link="https://example.com/fellowship",
+            notes="Draft essay and request transcript.",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert res.status_code == 200
+        assert "Research Fellowship" in res
+        assert "Science Center" in res
+        assert "Draft essay and request transcript." in res
+        assert "https://example.com/fellowship" in res
+
+    def test_non_owner_cannot_view_detail_page(self, user, testapp, db):
+        """Users cannot view opportunities they do not own."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user)
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id), status=404
+        )
+
+    def test_detail_page_shows_empty_notes_message(self, user, testapp, db):
+        """Detail page explains when notes are empty."""
+        opportunity = OpportunityFactory(user=user, notes=None)
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "No notes yet." in res
+
+    def test_archived_opportunities_are_separated(self, user, testapp, db):
+        """Archived opportunities render in the archived section."""
+        OpportunityFactory(user=user, title="Active Internship", status="submitted")
+        OpportunityFactory(user=user, title="Archived Scholarship", status="archived")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index"))
+        active_section = res.html.select_one("#active-opportunities")
+        archived_section = res.html.select_one("#archived-opportunities")
+
+        assert active_section is not None
+        assert archived_section is not None
+        assert "Active Internship" in active_section.text
+        assert "Archived Scholarship" not in active_section.text
+        assert "Archived Scholarship" in archived_section.text
+        assert "Active Internship" not in archived_section.text
+
+    def test_owner_can_edit_opportunity(self, user, testapp, db):
+        """Owners can update their opportunities."""
+        opportunity = OpportunityFactory(
+            user=user,
+            title="Old Title",
+            organization="Old Org",
+            status="saved",
+            priority="low",
+        )
+        db.session.commit()
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.edit", opportunity_id=opportunity.id))
+        form = res.forms[0]
+        form["title"] = "Updated Internship"
+        form["organization"] = "Updated Org"
+        form["category"] = "internship"
+        form["deadline"] = "2026-06-01"
+        form["status"] = "accepted"
+        form["priority"] = "high"
+        form["link"] = "https://example.com/updated"
+        form["notes"] = "Accepted after interview."
+
+        res = form.submit().follow()
+        db.session.refresh(opportunity)
+
+        assert res.status_code == 200
+        assert "Opportunity updated." in res
+        assert opportunity.title == "Updated Internship"
+        assert opportunity.organization == "Updated Org"
+        assert opportunity.status == "accepted"
+        assert opportunity.priority == "high"
+
+    def test_non_owner_cannot_edit_opportunity(self, user, testapp, db):
+        """Users cannot edit opportunities they do not own."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user)
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.get(
+            url_for("opportunities.edit", opportunity_id=opportunity.id), status=404
+        )
+
+    def test_archive_action_sets_archived_status(self, user, testapp, db):
+        """Archive action keeps the row and updates status."""
+        opportunity = OpportunityFactory(user=user, status="submitted")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for("opportunities.archive", opportunity_id=opportunity.id)
+        ).follow()
+        db.session.refresh(opportunity)
+
+        assert res.status_code == 200
+        assert "Opportunity archived." in res
+        assert opportunity.status == "archived"
+        assert Opportunity.get_by_id(opportunity.id) == opportunity
+
+    def test_non_owner_cannot_archive_opportunity(self, user, testapp, db):
+        """Users cannot archive opportunities they do not own."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user, status="submitted")
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for("opportunities.archive", opportunity_id=opportunity.id),
+            status=404,
+        )
+        db.session.refresh(opportunity)
+
+        assert opportunity.status == "submitted"
+
+    def test_restore_action_sets_planning_status(self, user, testapp, db):
+        """Restore action moves archived opportunities back to planning."""
+        opportunity = OpportunityFactory(user=user, status="archived")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for("opportunities.restore", opportunity_id=opportunity.id)
+        ).follow()
+        db.session.refresh(opportunity)
+
+        assert res.status_code == 200
+        assert "Opportunity restored." in res
+        assert opportunity.status == "planning"
+
+    def test_non_owner_cannot_restore_opportunity(self, user, testapp, db):
+        """Users cannot restore opportunities they do not own."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user, status="archived")
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for("opportunities.restore", opportunity_id=opportunity.id),
+            status=404,
+        )
+        db.session.refresh(opportunity)
+
+        assert opportunity.status == "archived"

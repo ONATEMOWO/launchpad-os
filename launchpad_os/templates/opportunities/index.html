@@ -1,5 +1,69 @@
 {% extends "layout.html" %}
 
+{% macro opportunity_table(opportunities, archived=False) %}
+<div class="table-responsive opportunity-table-wrap">
+  <table class="table opportunity-table align-middle mb-0">
+    <thead>
+      <tr>
+        <th scope="col">Opportunity</th>
+        <th scope="col">Organization</th>
+        <th scope="col">Category</th>
+        <th scope="col">Deadline</th>
+        <th scope="col">Status</th>
+        <th scope="col">Priority</th>
+        <th scope="col" class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for opportunity in opportunities %}
+      <tr class="{% if opportunity.status == 'archived' %}opportunity-archived{% endif %}">
+        <td>
+          <div class="fw-semibold">{{ opportunity.title }}</div>
+          {% if opportunity.link %}
+          <a class="small opportunity-link" href="{{ opportunity.link }}" target="_blank" rel="noopener">Open application link</a>
+          {% endif %}
+        </td>
+        <td>{{ opportunity.organization }}</td>
+        <td>
+          <span class="badge app-badge app-badge-soft">{{ opportunity.category }}</span>
+        </td>
+        <td>
+          {% if opportunity.deadline %}
+          {{ opportunity.deadline.strftime("%Y-%m-%d") }}
+          {% else %}
+          <span class="text-muted">No deadline</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge app-badge status-badge status-{{ opportunity.status|replace(' ', '-') }}">{{ opportunity.status }}</span>
+        </td>
+        <td>
+          <span class="badge app-badge priority-{{ opportunity.priority }}">{{ opportunity.priority }}</span>
+        </td>
+        <td class="text-end">
+          <div class="opportunity-actions d-flex justify-content-end gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">View</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('opportunities.edit', opportunity_id=opportunity.id) }}">Edit</a>
+            {% if archived %}
+            <form id="restoreForm{{ opportunity.id }}" method="POST" action="{{ url_for('opportunities.restore', opportunity_id=opportunity.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button class="btn btn-outline-primary btn-sm" type="submit">Restore</button>
+            </form>
+            {% else %}
+            <form id="archiveForm{{ opportunity.id }}" method="POST" action="{{ url_for('opportunities.archive', opportunity_id=opportunity.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button class="btn btn-outline-secondary btn-sm" type="submit">Archive</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
 {% block page_title %}Opportunities | LaunchPad OS{% endblock %}
 {% block meta_description %}Track internships, scholarships, and research opportunities in LaunchPad OS.{% endblock %}
 
@@ -10,64 +74,34 @@
       <div>
         <p class="eyebrow text-primary mb-2">Opportunity Tracking</p>
         <h1 class="fw-semibold mb-2">Opportunities</h1>
-        <p class="text-muted mb-0">Keep internships, scholarships, and research leads organized by next step.</p>
+        <p class="text-muted mb-0">Keep active applications visible while preserving archived records.</p>
       </div>
       <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">
         <i class="fa-solid fa-plus me-2"></i>Add opportunity
       </a>
     </div>
 
-    {% if opportunities %}
-    <div class="app-card opportunity-card">
+    {% if active_opportunities %}
+    <div class="app-card opportunity-card" id="active-opportunities">
       <div class="opportunity-card-header d-flex justify-content-between align-items-center">
         <div>
-          <h2 class="h5 fw-semibold mb-1">Tracked opportunities</h2>
-          <p class="text-muted mb-0">{{ opportunities|length }} saved item{% if opportunities|length != 1 %}s{% endif %}</p>
+          <h2 class="h5 fw-semibold mb-1">Active opportunities</h2>
+          <p class="text-muted mb-0">{{ active_opportunities|length }} active item{% if active_opportunities|length != 1 %}s{% endif %}</p>
         </div>
       </div>
-      <div class="table-responsive">
-        <table class="table opportunity-table align-middle mb-0">
-          <thead>
-            <tr>
-              <th scope="col">Opportunity</th>
-              <th scope="col">Organization</th>
-              <th scope="col">Category</th>
-              <th scope="col">Deadline</th>
-              <th scope="col">Status</th>
-              <th scope="col">Priority</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for opportunity in opportunities %}
-            <tr>
-              <td>
-                <div class="fw-semibold">{{ opportunity.title }}</div>
-                {% if opportunity.link %}
-                <a class="small opportunity-link" href="{{ opportunity.link }}" target="_blank" rel="noopener">Open application link</a>
-                {% endif %}
-              </td>
-              <td>{{ opportunity.organization }}</td>
-              <td>
-                <span class="badge app-badge app-badge-soft">{{ opportunity.category }}</span>
-              </td>
-              <td>
-                {% if opportunity.deadline %}
-                {{ opportunity.deadline.strftime("%Y-%m-%d") }}
-                {% else %}
-                <span class="text-muted">No deadline</span>
-                {% endif %}
-              </td>
-              <td>
-                <span class="badge app-badge status-badge">{{ opportunity.status }}</span>
-              </td>
-              <td>
-                <span class="badge app-badge priority-{{ opportunity.priority }}">{{ opportunity.priority }}</span>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      {{ opportunity_table(active_opportunities) }}
+    </div>
+    {% elif archived_opportunities %}
+    <div class="app-card empty-state text-center">
+      <div class="empty-state-icon mx-auto mb-3">
+        <i class="fa-solid fa-list-check"></i>
       </div>
+      <p class="eyebrow text-primary mb-2">Nothing active</p>
+      <h2 class="h4 fw-semibold">No active opportunities right now.</h2>
+      <p class="text-muted mb-4">Your archived opportunities are saved below. Add a new opportunity or restore an archived one when it becomes relevant again.</p>
+      <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">
+        <i class="fa-solid fa-plus me-2"></i>Add opportunity
+      </a>
     </div>
     {% else %}
     <div class="app-card empty-state text-center">
@@ -80,6 +114,22 @@
       <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">
         <i class="fa-solid fa-plus me-2"></i>Add your first opportunity
       </a>
+    </div>
+    {% endif %}
+
+    {% if archived_opportunities %}
+    <div class="archive-section">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-2 mb-3">
+        <div>
+          <p class="eyebrow text-muted mb-2">Archive</p>
+          <h2 class="h4 fw-semibold mb-1">Archived opportunities</h2>
+          <p class="text-muted mb-0">Closed or paused records stay here without cluttering active work.</p>
+        </div>
+        <span class="text-muted small">{{ archived_opportunities|length }} archived item{% if archived_opportunities|length != 1 %}s{% endif %}</span>
+      </div>
+      <div class="app-card opportunity-card archived-card" id="archived-opportunities">
+        {{ opportunity_table(archived_opportunities, archived=True) }}
+      </div>
     </div>
     {% endif %}
   </div>

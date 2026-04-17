@@ -67,12 +67,25 @@ class TestOpportunityForm:
             title="Example",
             organization="Example Co",
             category="internship",
-            status="accepted",
+            status="waitlisted",
             priority="medium",
         )
 
         assert form.validate() is False
         assert "Not a valid choice." in form.status.errors
+
+    def test_validate_accepts_lifecycle_statuses(self, db):
+        """Accepted, rejected, and archived are valid statuses."""
+        for status in ["accepted", "rejected", "archived"]:
+            form = OpportunityForm(
+                title="Example",
+                organization="Example Co",
+                category="internship",
+                status=status,
+                priority="medium",
+            )
+
+            assert form.validate() is True
 
     def test_validate_rejects_invalid_priority(self, db):
         """Priority must be one of the configured choices."""
