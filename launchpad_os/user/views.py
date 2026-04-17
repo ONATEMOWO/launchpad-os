@@ -9,5 +9,5 @@ blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../s
 @blueprint.route("/")
 @login_required
 def members():
-    """Redirect the old workspace page to the main app feature."""
-    return redirect(url_for("opportunities.index"))
+    """Redirect the old workspace page to the dashboard."""
+    return redirect(url_for("workspace.index"))

@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Workspace | LaunchPad OS{% endblock %}
+{% block meta_description %}Review active applications, deadlines, materials, and requirement progress in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section" id="workspace-dashboard">
+  <div class="container app-container">
+    <div class="app-page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+      <div>
+        <p class="eyebrow text-primary mb-2">Application Workspace</p>
+        <h1 class="fw-semibold mb-2">Welcome back, {{ current_user.username }}.</h1>
+        <p class="text-muted mb-0">Review what needs attention and jump back into the next application step.</p>
+      </div>
+      <div class="d-flex flex-column flex-sm-row gap-2">
+        <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">
+          <i class="fa-solid fa-plus me-2"></i>Add opportunity
+        </a>
+        <a class="btn btn-outline-primary app-action" href="{{ url_for('materials.new') }}">Add material</a>
+      </div>
+    </div>
+
+    <div class="workspace-metrics row g-3 mb-4">
+      <div class="col-md-6 col-xl-3">
+        <div class="app-card workspace-metric h-100">
+          <p class="eyebrow text-muted mb-2">Active</p>
+          <p class="workspace-metric-value mb-1" id="activeOpportunitiesCount">{{ active_opportunities_count }}</p>
+          <p class="text-muted mb-0">Applications currently in motion</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="app-card workspace-metric h-100">
+          <p class="eyebrow text-muted mb-2">Needs Work</p>
+          <p class="workspace-metric-value mb-1" id="incompleteOpportunitiesCount">{{ incomplete_opportunities_count }}</p>
+          <p class="text-muted mb-0">Opportunities with open checklist items</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="app-card workspace-metric h-100">
+          <p class="eyebrow text-muted mb-2">Materials</p>
+          <p class="workspace-metric-value mb-1" id="materialsCount">{{ materials_count }}</p>
+          <p class="text-muted mb-0">Reusable drafts, links, and notes</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="app-card workspace-metric h-100">
+          <p class="eyebrow text-muted mb-2">Archived</p>
+          <p class="workspace-metric-value mb-1" id="archivedOpportunitiesCount">{{ archived_opportunities_count }}</p>
+          <p class="text-muted mb-0">Closed or paused records</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="app-card workspace-panel h-100" id="dueSoonSection">
+          <div class="workspace-panel-header">
+            <div>
+              <p class="eyebrow text-primary mb-2">Attention Needed</p>
+              <h2 class="h4 fw-semibold mb-1">Upcoming deadlines</h2>
+              <p class="text-muted mb-0">Deadlines within the next 30 days appear here.</p>
+            </div>
+          </div>
+          {% if due_soon_opportunities %}
+          <div class="workspace-list">
+            {% for item in due_soon_opportunities %}
+            <a class="workspace-list-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+              <span>
+                <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                <span class="text-muted small">{{ item.opportunity.organization }}</span>
+              </span>
+              <span class="badge app-badge {% if item.is_overdue %}status-rejected{% else %}status-in-progress{% endif %}">{{ item.deadline_label }}</span>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="workspace-empty">
+            <p class="fw-semibold mb-1">No near deadlines.</p>
+            <p class="text-muted mb-0">Add deadlines to opportunities to make this section more useful.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="app-card workspace-panel h-100" id="checklistWorkSection">
+          <div class="workspace-panel-header">
+            <div>
+              <p class="eyebrow text-primary mb-2">Next Steps</p>
+              <h2 class="h4 fw-semibold mb-1">Checklist work</h2>
+              <p class="text-muted mb-0">Applications with missing or unfinished requirements.</p>
+            </div>
+          </div>
+          {% if incomplete_opportunities %}
+          <div class="workspace-list">
+            {% for item in incomplete_opportunities %}
+            <a class="workspace-list-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+              <span>
+                <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                <span class="text-muted small">
+                  {{ item.completed_requirements }} of {{ item.total_requirements }} requirements complete
+                </span>
+              </span>
+              <span class="badge app-badge status-badge">{{ item.completion_percent }}%</span>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="workspace-empty">
+            <p class="fw-semibold mb-1">All tracked checklists are complete.</p>
+            <p class="text-muted mb-0">Open an opportunity when you need to review details or add another requirement.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="app-card workspace-panel" id="activeProgressSection">
+      <div class="workspace-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <p class="eyebrow text-primary mb-2">Readiness</p>
+          <h2 class="h4 fw-semibold mb-1">Active opportunity progress</h2>
+          <p class="text-muted mb-0">Use requirement progress, status, and deadlines to decide what to work on next.</p>
+        </div>
+        <div class="d-flex flex-column flex-sm-row gap-2">
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.index') }}">View all opportunities</a>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('materials.index') }}">Open materials vault</a>
+        </div>
+      </div>
+
+      {% if opportunity_cards %}
+      <div class="workspace-opportunity-grid">
+        {% for item in opportunity_cards %}
+        <div class="workspace-opportunity-card">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h3 class="h5 fw-semibold mb-1">{{ item.opportunity.title }}</h3>
+              <p class="text-muted mb-0">{{ item.opportunity.organization }}</p>
+            </div>
+            <span class="badge app-badge status-badge status-{{ item.opportunity.status|replace(' ', '-') }}">{{ item.opportunity.status }}</span>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+              <span class="small fw-semibold">{{ item.completed_requirements }} of {{ item.total_requirements }} requirements</span>
+              <span class="small text-muted">{{ item.completion_percent }}%</span>
+            </div>
+            <div class="progress checklist-progress" role="progressbar" aria-label="Requirement completion for {{ item.opportunity.title }}" aria-valuenow="{{ item.completion_percent }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar" style="width: {{ item.completion_percent }}%"></div>
+            </div>
+          </div>
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+            <span class="text-muted small">
+              {% if item.opportunity.deadline %}
+              Deadline {{ item.opportunity.deadline.strftime("%Y-%m-%d") }} · {{ item.deadline_label }}
+              {% else %}
+              No deadline set
+              {% endif %}
+            </span>
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">View opportunity</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="workspace-empty text-center">
+        <div class="empty-state-icon mx-auto mb-3">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+        <h3 class="h5 fw-semibold">No active opportunities yet.</h3>
+        <p class="text-muted mb-4">Add an internship, scholarship, or research role to start building your workspace.</p>
+        <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">Add your first opportunity</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

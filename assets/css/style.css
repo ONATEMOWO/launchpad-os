@@ -345,6 +345,65 @@ textarea {
   flex-shrink: 0;
 }
 
+.workspace-metric,
+.workspace-panel {
+  padding: 1.5rem;
+}
+
+.workspace-metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.workspace-panel-header {
+  margin-bottom: 1.25rem;
+}
+
+.workspace-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.workspace-list-item {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  color: #212529;
+  text-decoration: none;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background-color: #ffffff;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workspace-list-item:hover {
+  color: #212529;
+  border-color: rgba(13, 110, 253, 0.28);
+  box-shadow: 0 0.5rem 1.25rem rgba(33, 37, 41, 0.06);
+}
+
+.workspace-empty {
+  padding: 2rem;
+  background-color: #fbfcfd;
+  border: 1px dashed #dbe3ec;
+  border-radius: 8px;
+}
+
+.workspace-opportunity-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.workspace-opportunity-card {
+  padding: 1rem;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
 .priority-low {
   color: #198754;
   background-color: #eaf7ef;
@@ -490,6 +549,16 @@ textarea {
 
   .checklist-actions {
     justify-content: flex-start !important;
+  }
+
+  .workspace-metric,
+  .workspace-panel {
+    padding: 1.25rem;
+  }
+
+  .workspace-list-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .form-actions .btn,

@@ -31,7 +31,7 @@ def _handle_login(form):
     if form.validate_on_submit():
         login_user(form.user)
         flash("You are logged in.", "success")
-        redirect_url = request.args.get("next") or url_for("opportunities.index")
+        redirect_url = request.args.get("next") or url_for("workspace.index")
         return redirect(redirect_url)
     flash_errors(form)
     return None
@@ -48,7 +48,7 @@ def home():
 def login():
     """Login page."""
     if current_user and current_user.is_authenticated:
-        return redirect(url_for("opportunities.index"))
+        return redirect(url_for("workspace.index"))
 
     form = LoginForm(request.form)
     if request.method == "POST":

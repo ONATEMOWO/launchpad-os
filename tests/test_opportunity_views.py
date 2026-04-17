@@ -32,12 +32,12 @@ class TestOpportunityViews:
         assert "Opportunities" in res
 
     def test_workspace_redirects_to_opportunities(self, user, testapp):
-        """The old workspace page redirects to the opportunity list."""
+        """The old workspace page redirects to the dashboard."""
         login(testapp, user)
         res = testapp.get(url_for("user.members"))
 
         assert res.status_code == 302
-        assert res.location.endswith(url_for("opportunities.index"))
+        assert res.location.endswith(url_for("workspace.index"))
 
     def test_logged_in_user_can_access_new(self, user, testapp):
         """Logged-in users can view the create form."""
