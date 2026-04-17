@@ -21,7 +21,7 @@
     <div class="app-card detail-card">
       <div class="detail-summary">
         <span class="badge app-badge app-badge-soft">{{ opportunity.category }}</span>
-        <span class="badge app-badge status-badge status-{{ opportunity.status|replace(' ', '-') }}">{{ opportunity.status }}</span>
+        <span class="badge app-badge status-badge status-{{ opportunity.status|replace(' ', '-') }}">{{ opportunity.status_label }}</span>
         <span class="badge app-badge priority-{{ opportunity.priority }}">{{ opportunity.priority }}</span>
       </div>
 
@@ -42,7 +42,7 @@
         </div>
         <div>
           <p class="detail-label">Status</p>
-          <p class="detail-value text-capitalize">{{ opportunity.status }}</p>
+          <p class="detail-value">{{ opportunity.status_label }}</p>
         </div>
         <div>
           <p class="detail-label">Priority</p>

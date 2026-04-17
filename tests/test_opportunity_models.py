@@ -53,3 +53,10 @@ class TestOpportunity:
         opportunity = Opportunity(title="Research Fellowship")
 
         assert opportunity.__repr__() == "<Opportunity('Research Fellowship')>"
+
+    def test_status_label_uses_student_friendly_wording(self):
+        """Status label can differ from the stored value."""
+        opportunity = Opportunity(status="planning")
+
+        assert opportunity.status == "planning"
+        assert opportunity.status_label == "Preparing"

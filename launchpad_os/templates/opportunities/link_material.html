@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Link Material | LaunchPad OS{% endblock %}
+{% block meta_description %}Link a saved material to an opportunity in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container app-container-narrow">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+          <div>
+            <p class="eyebrow text-primary mb-2">Related Materials</p>
+            <h1 class="fw-semibold mb-2">Link material</h1>
+            <p class="text-muted mb-0">Connect an existing saved material to {{ opportunity.title }}.</p>
+          </div>
+          <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Back to opportunity</a>
+        </div>
+
+        <div class="app-card form-card">
+          {% if available_materials %}
+          <form id="linkMaterialForm" method="POST" action="" role="form">
+            {{ form.csrf_token }}
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">Choose a saved material</h2>
+              <p class="text-muted mb-0">Only materials from your vault that are not already linked to this opportunity are listed.</p>
+            </div>
+            <div class="mb-4">
+              {{ form.material_id.label(class_="form-label") }}
+              {{ form.material_id(class_="form-select") }}
+            </div>
+            <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
+              <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Cancel</a>
+              <button class="btn btn-primary" type="submit">Link material</button>
+            </div>
+          </form>
+          {% else %}
+          <div class="empty-state text-center py-4">
+            <div class="empty-state-icon mx-auto mb-3">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h2 class="h5 fw-semibold">No available materials to link.</h2>
+            <p class="text-muted mb-4">Create a new material or unlink an existing one before linking another item to this opportunity.</p>
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+              <a class="btn btn-primary app-action" href="{{ url_for('materials.new') }}">Add material</a>
+              <a class="btn btn-outline-secondary app-action" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Back to opportunity</a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

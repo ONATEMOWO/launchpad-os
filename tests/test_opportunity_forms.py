@@ -99,3 +99,10 @@ class TestOpportunityForm:
 
         assert form.validate() is False
         assert "Not a valid choice." in form.priority.errors
+
+    def test_status_choices_use_consistent_display_labels(self, db):
+        """Status dropdown uses the polished display labels."""
+        form = OpportunityForm()
+
+        assert ("planning", "Preparing") in form.status.choices
+        assert ("in progress", "In Progress") in form.status.choices

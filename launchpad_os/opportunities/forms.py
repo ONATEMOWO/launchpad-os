@@ -33,3 +33,11 @@ class OpportunityForm(FlaskForm):
     )
     link = StringField("Link", validators=[Optional(), URL(), Length(max=255)])
     notes = TextAreaField("Notes", validators=[Optional()])
+
+
+class MaterialLinkForm(FlaskForm):
+    """Link an existing material to an opportunity."""
+
+    material_id = SelectField(
+        "Material", coerce=int, validators=[DataRequired()], choices=[]
+    )

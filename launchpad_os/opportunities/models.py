@@ -12,19 +12,37 @@ CATEGORY_CHOICES = [
 
 STATUS_CHOICES = [
     ("saved", "Saved"),
-    ("planning", "Planning"),
-    ("in progress", "In progress"),
+    ("planning", "Preparing"),
+    ("in progress", "In Progress"),
     ("submitted", "Submitted"),
     ("accepted", "Accepted"),
     ("rejected", "Rejected"),
     ("archived", "Archived"),
 ]
 
+STATUS_LABELS = dict(STATUS_CHOICES)
+
 PRIORITY_CHOICES = [
     ("low", "Low"),
     ("medium", "Medium"),
     ("high", "High"),
 ]
+
+opportunity_materials = db.Table(
+    "opportunity_materials",
+    Column(
+        "opportunity_id",
+        db.Integer,
+        db.ForeignKey("opportunities.id"),
+        primary_key=True,
+    ),
+    Column(
+        "material_id",
+        db.Integer,
+        db.ForeignKey("materials.id"),
+        primary_key=True,
+    ),
+)
 
 
 def utc_now():
@@ -46,9 +64,17 @@ class Opportunity(PkModel):
     notes = Column(db.Text, nullable=True)
     user_id = reference_col("users", nullable=False)
     user = relationship("User", backref="opportunities")
+    materials = relationship(
+        "Material", secondary=opportunity_materials, backref="opportunities"
+    )
     created_at = Column(db.DateTime, nullable=False, default=utc_now)
     updated_at = Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     def __repr__(self):
         """Represent instance as a unique string."""
         return f"<Opportunity({self.title!r})>"
+
+    @property
+    def status_label(self):
+        """Human-readable status label for templates."""
+        return STATUS_LABELS.get(self.status, self.status.title())
