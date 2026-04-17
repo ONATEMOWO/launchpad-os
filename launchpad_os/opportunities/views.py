@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 
 from launchpad_os.opportunities.forms import OpportunityForm
 from launchpad_os.opportunities.models import Opportunity
+from launchpad_os.requirements.models import RequirementItem
 from launchpad_os.utils import flash_errors
 
 blueprint = Blueprint(
@@ -70,7 +71,28 @@ def new():
 def detail(opportunity_id):
     """Show full opportunity details."""
     opportunity = _get_owned_opportunity_or_404(opportunity_id)
-    return render_template("opportunities/detail.html", opportunity=opportunity)
+    requirement_items = (
+        RequirementItem.query.filter_by(opportunity_id=opportunity.id)
+        .order_by(RequirementItem.is_completed.asc(), RequirementItem.created_at.asc())
+        .all()
+    )
+    total_requirements = len(requirement_items)
+    completed_requirements = sum(
+        1 for requirement in requirement_items if requirement.is_completed
+    )
+    completion_percent = (
+        round((completed_requirements / total_requirements) * 100)
+        if total_requirements
+        else 0
+    )
+    return render_template(
+        "opportunities/detail.html",
+        opportunity=opportunity,
+        requirement_items=requirement_items,
+        total_requirements=total_requirements,
+        completed_requirements=completed_requirements,
+        completion_percent=completion_percent,
+    )
 
 
 @blueprint.route("/<int:opportunity_id>/edit/", methods=["GET", "POST"])

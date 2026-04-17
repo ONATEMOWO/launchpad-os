@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Add Requirement | LaunchPad OS{% endblock %}
+{% block meta_description %}Add a checklist requirement for an opportunity in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container app-container-narrow">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+          <div>
+            <p class="eyebrow text-primary mb-2">Requirement Checklist</p>
+            <h1 class="fw-semibold mb-2">Add requirement</h1>
+            <p class="text-muted mb-0">Add a task needed for {{ opportunity.title }}.</p>
+          </div>
+          <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Back to opportunity</a>
+        </div>
+
+        <div class="app-card form-card">
+          <form method="POST" action="" role="form">
+            {{ form.csrf_token }}
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">Requirement details</h2>
+              <p class="text-muted mb-0">Keep each item concrete, such as a resume version, essay draft, transcript, or recommendation request.</p>
+            </div>
+            <div class="row g-4">
+              <div class="col-12">
+                {{ form.title.label(class_="form-label") }}
+                {{ form.title(placeholder="Upload resume", class_="form-control") }}
+              </div>
+              <div class="col-12">
+                {{ form.notes.label(class_="form-label") }}
+                {{ form.notes(placeholder="Details, source instructions, or next step", class_="form-control", rows="4") }}
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  {{ form.is_completed(class_="form-check-input") }}
+                  {{ form.is_completed.label(class_="form-check-label") }}
+                </div>
+              </div>
+            </div>
+            <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
+              <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Cancel</a>
+              <button class="btn btn-primary" type="submit">Save requirement</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

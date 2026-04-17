@@ -67,6 +67,74 @@
         {% endif %}
       </div>
     </div>
+
+    <div class="app-card detail-card checklist-card mt-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+        <div>
+          <p class="eyebrow text-primary mb-2">Requirement Checklist</p>
+          <h2 class="h4 fw-semibold mb-2">Application requirements</h2>
+          <p class="text-muted mb-0">Track the tasks and materials needed before this application is complete.</p>
+        </div>
+        <a class="btn btn-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">
+          <i class="fa-solid fa-plus me-2"></i>Add requirement
+        </a>
+      </div>
+
+      <div class="checklist-summary mb-4">
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+          <span class="fw-semibold">{{ completed_requirements }} of {{ total_requirements }} complete</span>
+          <span class="text-muted small">{{ completion_percent }}%</span>
+        </div>
+        <div class="progress checklist-progress" role="progressbar" aria-label="Requirement completion" aria-valuenow="{{ completion_percent }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar" style="width: {{ completion_percent }}%"></div>
+        </div>
+      </div>
+
+      {% if requirement_items %}
+      <div class="checklist-list">
+        {% for requirement in requirement_items %}
+        <div class="checklist-item {% if requirement.is_completed %}checklist-item-completed{% endif %}">
+          <div class="checklist-item-main">
+            <form method="POST" action="{{ url_for('requirements.toggle', requirement_id=requirement.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button class="btn checklist-toggle" type="submit" aria-label="{% if requirement.is_completed %}Mark {{ requirement.title }} incomplete{% else %}Mark {{ requirement.title }} complete{% endif %}">
+                {% if requirement.is_completed %}
+                <i class="fa-solid fa-circle-check"></i>
+                {% else %}
+                <i class="fa-regular fa-circle"></i>
+                {% endif %}
+              </button>
+            </form>
+            <div>
+              <h3 class="h6 fw-semibold mb-1">{{ requirement.title }}</h3>
+              {% if requirement.notes %}
+              <p class="text-muted mb-0">{{ requirement.notes }}</p>
+              {% else %}
+              <p class="text-muted mb-0">No notes added.</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="opportunity-actions checklist-actions d-flex justify-content-end gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('requirements.edit', requirement_id=requirement.id) }}">Edit</a>
+            <form method="POST" action="{{ url_for('requirements.delete', requirement_id=requirement.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state text-center py-4">
+        <div class="empty-state-icon mx-auto mb-3">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+        <h3 class="h5 fw-semibold">No requirements yet.</h3>
+        <p class="text-muted mb-4">Add checklist items such as resume, transcript, essay, recommendation, or submission confirmation.</p>
+        <a class="btn btn-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">Add first requirement</a>
+      </div>
+      {% endif %}
+    </div>
   </div>
 </section>
 {% endblock %}

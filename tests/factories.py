@@ -6,6 +6,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 from launchpad_os.database import db
 from launchpad_os.materials.models import Material
 from launchpad_os.opportunities.models import Opportunity
+from launchpad_os.requirements.models import RequirementItem
 from launchpad_os.user.models import User
 
 
@@ -62,3 +63,17 @@ class MaterialFactory(BaseFactory):
         """Factory configuration."""
 
         model = Material
+
+
+class RequirementItemFactory(BaseFactory):
+    """Requirement item factory."""
+
+    opportunity = SubFactory(OpportunityFactory)
+    title = Sequence(lambda n: f"Requirement {n}")
+    is_completed = False
+    notes = None
+
+    class Meta:
+        """Factory configuration."""
+
+        model = RequirementItem
