@@ -1,0 +1,6 @@
+[run]
+source = launchpad_os
+omit = 
+    tests/*
+    autoapp.py
+
