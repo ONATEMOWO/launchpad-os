@@ -5,7 +5,7 @@ import sys
 
 from flask import Flask, render_template
 
-from launchpad_os import commands, public, user
+from launchpad_os import commands, opportunities, public, user
 from launchpad_os.extensions import (
     bcrypt,
     cache,
@@ -51,6 +51,7 @@ def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(public.views.blueprint)
     app.register_blueprint(user.views.blueprint)
+    app.register_blueprint(opportunities.views.blueprint)
     return None
 
 
@@ -73,7 +74,11 @@ def register_shellcontext(app):
 
     def shell_context():
         """Shell context objects."""
-        return {"db": db, "User": user.models.User}
+        return {
+            "db": db,
+            "User": user.models.User,
+            "Opportunity": opportunities.models.Opportunity,
+        }
 
     app.shell_context_processor(shell_context)
 

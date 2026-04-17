@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Opportunities | LaunchPad OS{% endblock %}
+{% block meta_description %}Track internships, scholarships, and research opportunities in LaunchPad OS.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container">
+    <div class="app-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <p class="eyebrow text-primary mb-2">Opportunity Tracking</p>
+        <h1 class="fw-semibold mb-2">Opportunities</h1>
+        <p class="text-muted mb-0">Keep internships, scholarships, and research leads organized by next step.</p>
+      </div>
+      <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">
+        <i class="fa-solid fa-plus me-2"></i>Add opportunity
+      </a>
+    </div>
+
+    {% if opportunities %}
+    <div class="app-card opportunity-card">
+      <div class="opportunity-card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 fw-semibold mb-1">Tracked opportunities</h2>
+          <p class="text-muted mb-0">{{ opportunities|length }} saved item{% if opportunities|length != 1 %}s{% endif %}</p>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table opportunity-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Opportunity</th>
+              <th scope="col">Organization</th>
+              <th scope="col">Category</th>
+              <th scope="col">Deadline</th>
+              <th scope="col">Status</th>
+              <th scope="col">Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for opportunity in opportunities %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ opportunity.title }}</div>
+                {% if opportunity.link %}
+                <a class="small opportunity-link" href="{{ opportunity.link }}" target="_blank" rel="noopener">Open application link</a>
+                {% endif %}
+              </td>
+              <td>{{ opportunity.organization }}</td>
+              <td>
+                <span class="badge app-badge app-badge-soft">{{ opportunity.category }}</span>
+              </td>
+              <td>
+                {% if opportunity.deadline %}
+                {{ opportunity.deadline.strftime("%Y-%m-%d") }}
+                {% else %}
+                <span class="text-muted">No deadline</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge app-badge status-badge">{{ opportunity.status }}</span>
+              </td>
+              <td>
+                <span class="badge app-badge priority-{{ opportunity.priority }}">{{ opportunity.priority }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="app-card empty-state text-center">
+      <div class="empty-state-icon mx-auto mb-3">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <p class="eyebrow text-primary mb-2">Start your workspace</p>
+      <h2 class="h4 fw-semibold">No opportunities yet.</h2>
+      <p class="text-muted mb-4">Add one internship, scholarship, or research role so LaunchPad OS can help you keep the next step visible.</p>
+      <a class="btn btn-primary app-action" href="{{ url_for('opportunities.new') }}">
+        <i class="fa-solid fa-plus me-2"></i>Add your first opportunity
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

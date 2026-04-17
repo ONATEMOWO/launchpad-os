@@ -15,7 +15,7 @@
         </p>
         <div class="d-flex flex-column flex-sm-row gap-2">
           {% if current_user and current_user.is_authenticated %}
-          <a class="btn btn-primary btn-lg" href="{{ url_for('user.members') }}">Open workspace</a>
+          <a class="btn btn-primary btn-lg" href="{{ url_for('opportunities.index') }}">Open workspace</a>
           <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('public.about') }}">Project Overview</a>
           {% else %}
           <a class="btn btn-primary btn-lg" href="{{ url_for('public.register') }}">Create account</a>

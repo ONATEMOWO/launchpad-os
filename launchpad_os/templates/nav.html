@@ -15,7 +15,10 @@
       <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
         {% if current_user and current_user.is_authenticated %}
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('user.members') }}">Workspace</a>
+          <a class="nav-link fw-semibold" href="{{ url_for('opportunities.index') }}">Opportunities</a>
+        </li>
+        <li class="nav-item">
+          <span class="navbar-text text-light-emphasis">{{ current_user.username }}</span>
         </li>
         <li class="nav-item">
           <a class="btn btn-outline-light btn-sm" href="{{ url_for('public.logout') }}">Sign out</a>

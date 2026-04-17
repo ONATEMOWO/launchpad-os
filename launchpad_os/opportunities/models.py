@@ -1,0 +1,51 @@
+# -*- coding: utf-8 -*-
+"""Opportunity models."""
+import datetime as dt
+
+from launchpad_os.database import Column, PkModel, db, reference_col, relationship
+
+CATEGORY_CHOICES = [
+    ("internship", "Internship"),
+    ("scholarship", "Scholarship"),
+    ("research", "Research"),
+]
+
+STATUS_CHOICES = [
+    ("saved", "Saved"),
+    ("planning", "Planning"),
+    ("in progress", "In progress"),
+    ("submitted", "Submitted"),
+]
+
+PRIORITY_CHOICES = [
+    ("low", "Low"),
+    ("medium", "Medium"),
+    ("high", "High"),
+]
+
+
+def utc_now():
+    """Return the current timezone-aware UTC datetime."""
+    return dt.datetime.now(dt.timezone.utc)
+
+
+class Opportunity(PkModel):
+    """An internship, scholarship, or research opportunity for a user."""
+
+    __tablename__ = "opportunities"
+    title = Column(db.String(120), nullable=False)
+    organization = Column(db.String(120), nullable=False)
+    category = Column(db.String(30), nullable=False)
+    deadline = Column(db.Date, nullable=True)
+    status = Column(db.String(30), nullable=False, default="saved")
+    priority = Column(db.String(20), nullable=False, default="medium")
+    link = Column(db.String(255), nullable=True)
+    notes = Column(db.Text, nullable=True)
+    user_id = reference_col("users", nullable=False)
+    user = relationship("User", backref="opportunities")
+    created_at = Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    def __repr__(self):
+        """Represent instance as a unique string."""
+        return f"<Opportunity({self.title!r})>"
