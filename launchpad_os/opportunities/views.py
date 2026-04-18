@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 """Opportunity views."""
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from launchpad_os.materials.models import Material
 from launchpad_os.opportunities.forms import MaterialLinkForm, OpportunityForm
-from launchpad_os.opportunities.models import Opportunity
+from launchpad_os.opportunities.models import (
+    CATEGORY_CHOICES,
+    PRIORITY_CHOICES,
+    STATUS_CHOICES,
+    Opportunity,
+)
 from launchpad_os.requirements.models import RequirementItem
 from launchpad_os.utils import flash_errors
 
@@ -18,21 +24,61 @@ blueprint = Blueprint(
 @login_required
 def index():
     """List current user's opportunities."""
+    q = request.args.get("q", "").strip()
+    status = request.args.get("status", "")
+    category = request.args.get("category", "")
+    priority = request.args.get("priority", "")
+
+    status_values = {choice[0] for choice in STATUS_CHOICES}
+    category_values = {choice[0] for choice in CATEGORY_CHOICES}
+    priority_values = {choice[0] for choice in PRIORITY_CHOICES}
+
+    if status not in status_values:
+        status = ""
+    if category not in category_values:
+        category = ""
+    if priority not in priority_values:
+        priority = ""
+
+    query = Opportunity.query.filter_by(user_id=current_user.id)
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                Opportunity.title.ilike(search_term),
+                Opportunity.organization.ilike(search_term),
+            )
+        )
+    if status:
+        query = query.filter_by(status=status)
+    if category:
+        query = query.filter_by(category=category)
+    if priority:
+        query = query.filter_by(priority=priority)
+
     active_opportunities = (
-        Opportunity.query.filter_by(user_id=current_user.id)
-        .filter(Opportunity.status != "archived")
+        query.filter(Opportunity.status != "archived")
         .order_by(Opportunity.created_at.desc())
         .all()
     )
     archived_opportunities = (
-        Opportunity.query.filter_by(user_id=current_user.id, status="archived")
-        .order_by(Opportunity.updated_at.desc())
-        .all()
+        query.filter_by(status="archived").order_by(Opportunity.updated_at.desc()).all()
     )
+    filters = {
+        "q": q,
+        "status": status,
+        "category": category,
+        "priority": priority,
+    }
     return render_template(
         "opportunities/index.html",
         active_opportunities=active_opportunities,
         archived_opportunities=archived_opportunities,
+        filters=filters,
+        has_filters=any(filters.values()),
+        status_choices=STATUS_CHOICES,
+        category_choices=CATEGORY_CHOICES,
+        priority_choices=PRIORITY_CHOICES,
     )
 
 

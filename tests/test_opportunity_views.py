@@ -95,6 +95,96 @@ class TestOpportunityViews:
         assert own_opportunity.title in res
         assert other_opportunity.title not in res
 
+    def test_search_opportunities_by_title(self, user, testapp, db):
+        """Users can search opportunities by title."""
+        matching = OpportunityFactory(
+            user=user, title="Amazon Software Internship", organization="AWS"
+        )
+        other = OpportunityFactory(
+            user=user, title="Campus Writing Award", organization="English Department"
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", q="amazon"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_search_opportunities_by_organization(self, user, testapp, db):
+        """Users can search opportunities by organization."""
+        matching = OpportunityFactory(
+            user=user, title="Cloud Program", organization="Amazon"
+        )
+        other = OpportunityFactory(
+            user=user, title="Policy Fellowship", organization="City Office"
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", q="amazon"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_filter_opportunities_by_status(self, user, testapp, db):
+        """Users can filter opportunities by status."""
+        matching = OpportunityFactory(
+            user=user, title="Submitted Fellowship", status="submitted"
+        )
+        other = OpportunityFactory(user=user, title="Saved Fellowship", status="saved")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", status="submitted"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_filter_opportunities_by_category(self, user, testapp, db):
+        """Users can filter opportunities by category."""
+        matching = OpportunityFactory(
+            user=user, title="Scholarship Match", category="scholarship"
+        )
+        other = OpportunityFactory(
+            user=user, title="Internship Match", category="internship"
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", category="scholarship"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_filter_opportunities_by_priority(self, user, testapp, db):
+        """Users can filter opportunities by priority."""
+        matching = OpportunityFactory(user=user, title="Urgent Role", priority="high")
+        other = OpportunityFactory(user=user, title="Later Role", priority="low")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", priority="high"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_filtered_opportunities_remain_user_scoped(self, user, testapp, db):
+        """Filtered opportunity results only include the current user's records."""
+        other_user = UserFactory(password="myprecious")
+        OpportunityFactory(
+            user=other_user,
+            title="Private Amazon Internship",
+            organization="Amazon",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", q="amazon"))
+
+        assert "Private Amazon Internship" not in res
+        assert "No matching opportunities found." in res
+
     def test_owner_can_view_detail_page(self, user, testapp, db):
         """Owners can view full opportunity details."""
         opportunity = OpportunityFactory(

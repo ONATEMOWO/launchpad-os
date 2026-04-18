@@ -81,17 +81,69 @@
       </a>
     </div>
 
+    <div class="app-card p-3 p-md-4 mb-4">
+      <form class="row g-3 align-items-end" method="GET" action="{{ url_for('opportunities.index') }}">
+        <div class="col-12 col-lg-4">
+          <label class="form-label fw-semibold" for="opportunitySearch">Search</label>
+          <input class="form-control" id="opportunitySearch" type="search" name="q" value="{{ filters.q }}" placeholder="Search title or organization">
+        </div>
+        <div class="col-12 col-sm-4 col-lg-2">
+          <label class="form-label fw-semibold" for="statusFilter">Status</label>
+          <select class="form-select" id="statusFilter" name="status">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-sm-4 col-lg-2">
+          <label class="form-label fw-semibold" for="categoryFilter">Category</label>
+          <select class="form-select" id="categoryFilter" name="category">
+            <option value="">All categories</option>
+            {% for value, label in category_choices %}
+            <option value="{{ value }}" {% if filters.category == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-sm-4 col-lg-2">
+          <label class="form-label fw-semibold" for="priorityFilter">Priority</label>
+          <select class="form-select" id="priorityFilter" name="priority">
+            <option value="">All priorities</option>
+            {% for value, label in priority_choices %}
+            <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-lg-2 d-flex flex-column flex-sm-row flex-lg-column gap-2">
+          <button class="btn btn-primary" type="submit">Apply</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Clear</a>
+        </div>
+      </form>
+    </div>
+
+    {% set total_opportunities = active_opportunities|length + archived_opportunities|length %}
+
     {% if active_opportunities %}
     <div class="app-card opportunity-card" id="active-opportunities">
       <div class="opportunity-card-header d-flex justify-content-between align-items-center">
         <div>
           <h2 class="h5 fw-semibold mb-1">Active opportunities</h2>
-          <p class="text-muted mb-0">{{ active_opportunities|length }} active item{% if active_opportunities|length != 1 %}s{% endif %}</p>
+          <p class="text-muted mb-0">{{ active_opportunities|length }} active item{% if active_opportunities|length != 1 %}s{% endif %}{% if has_filters %} matching filters{% endif %}</p>
         </div>
       </div>
       {{ opportunity_table(active_opportunities) }}
     </div>
-    {% elif archived_opportunities %}
+    {% elif has_filters and total_opportunities == 0 %}
+    <div class="app-card empty-state text-center">
+      <div class="empty-state-icon mx-auto mb-3">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </div>
+      <p class="eyebrow text-primary mb-2">No results</p>
+      <h2 class="h4 fw-semibold">No matching opportunities found.</h2>
+      <p class="text-muted mb-4">Try a broader search term or remove one of the filters.</p>
+      <a class="btn btn-outline-primary app-action" href="{{ url_for('opportunities.index') }}">Clear filters</a>
+    </div>
+    {% elif archived_opportunities and not has_filters %}
     <div class="app-card empty-state text-center">
       <div class="empty-state-icon mx-auto mb-3">
         <i class="fa-solid fa-list-check"></i>

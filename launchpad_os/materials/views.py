@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """Material views."""
-from flask import Blueprint, flash, redirect, render_template, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from launchpad_os.materials.forms import MaterialForm
-from launchpad_os.materials.models import Material
+from launchpad_os.materials.models import MATERIAL_TYPE_CHOICES, Material
 from launchpad_os.utils import flash_errors
 
 blueprint = Blueprint(
@@ -16,12 +17,34 @@ blueprint = Blueprint(
 @login_required
 def index():
     """List current user's materials."""
-    materials = (
-        Material.query.filter_by(user_id=current_user.id)
-        .order_by(Material.updated_at.desc())
-        .all()
+    q = request.args.get("q", "").strip()
+    material_type = request.args.get("material_type", "")
+    material_type_values = {choice[0] for choice in MATERIAL_TYPE_CHOICES}
+    if material_type not in material_type_values:
+        material_type = ""
+
+    query = Material.query.filter_by(user_id=current_user.id)
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                Material.title.ilike(search_term),
+                Material.content.ilike(search_term),
+                Material.notes.ilike(search_term),
+            )
+        )
+    if material_type:
+        query = query.filter_by(material_type=material_type)
+
+    materials = query.order_by(Material.updated_at.desc()).all()
+    filters = {"q": q, "material_type": material_type}
+    return render_template(
+        "materials/index.html",
+        materials=materials,
+        filters=filters,
+        has_filters=any(filters.values()),
+        material_type_choices=MATERIAL_TYPE_CHOICES,
     )
-    return render_template("materials/index.html", materials=materials)
 
 
 def _get_owned_material_or_404(material_id):

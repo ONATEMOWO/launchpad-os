@@ -78,6 +78,84 @@ class TestMaterialViews:
         assert own_material.title in res
         assert other_material.title not in res
 
+    def test_search_materials_by_title(self, user, testapp, db):
+        """Users can search materials by title."""
+        matching = MaterialFactory(user=user, title="Amazon Resume Draft")
+        other = MaterialFactory(user=user, title="Campus Essay Notes")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.index", q="amazon"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_search_materials_by_content(self, user, testapp, db):
+        """Users can search materials by content."""
+        matching = MaterialFactory(
+            user=user,
+            title="Resume Bullets",
+            content="Cloud project leadership notes.",
+        )
+        other = MaterialFactory(
+            user=user,
+            title="Essay Outline",
+            content="Community service paragraph.",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.index", q="cloud"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_search_materials_by_notes(self, user, testapp, db):
+        """Users can search materials by notes."""
+        matching = MaterialFactory(
+            user=user,
+            title="Scholarship Draft",
+            notes="Ask writing center about thesis clarity.",
+        )
+        other = MaterialFactory(
+            user=user,
+            title="Cover Letter Draft",
+            notes="Tailor for software roles.",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.index", q="thesis"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_filter_materials_by_type(self, user, testapp, db):
+        """Users can filter materials by material type."""
+        matching = MaterialFactory(
+            user=user, title="Personal Statement", material_type="essay"
+        )
+        other = MaterialFactory(user=user, title="Resume Notes", material_type="resume")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.index", material_type="essay"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_filtered_materials_remain_user_scoped(self, user, testapp, db):
+        """Filtered material results only include the current user's records."""
+        other_user = UserFactory(password="myprecious")
+        MaterialFactory(user=other_user, title="Private Amazon Resume")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.index", q="amazon"))
+
+        assert "Private Amazon Resume" not in res
+        assert "No matching materials found." in res
+
     def test_owner_can_view_detail_page(self, user, testapp, db):
         """Owners can view full material details."""
         material = MaterialFactory(
