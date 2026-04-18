@@ -90,6 +90,20 @@
         </div>
       </div>
 
+      <div class="readiness-summary mb-4">
+        <p class="fw-semibold mb-2">{{ next_step_message }}</p>
+        {% if incomplete_requirements %}
+        <p class="text-muted mb-2">Still needs attention:</p>
+        <ul class="readiness-missing-list mb-0">
+          {% for requirement in incomplete_requirements[:3] %}
+          <li>{{ requirement.title }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">No incomplete checklist items are currently blocking this application.</p>
+        {% endif %}
+      </div>
+
       {% if requirement_items %}
       <div class="checklist-list">
         {% for requirement in requirement_items %}
@@ -132,6 +146,47 @@
         <h3 class="h5 fw-semibold">No requirements yet.</h3>
         <p class="text-muted mb-4">Add checklist items such as resume, transcript, essay, recommendation, or submission confirmation.</p>
         <a class="btn btn-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">Add first requirement</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="app-card detail-card related-materials-card mt-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+        <div>
+          <p class="eyebrow text-primary mb-2">Related Materials</p>
+          <h2 class="h4 fw-semibold mb-2">Linked materials</h2>
+          <p class="text-muted mb-0">Connect reusable materials from the vault to this specific application.</p>
+        </div>
+        <a class="btn btn-outline-primary app-action" href="{{ url_for('opportunities.link_material', opportunity_id=opportunity.id) }}">Link existing material</a>
+      </div>
+
+      {% if linked_materials %}
+      <div class="related-material-list">
+        {% for material in linked_materials %}
+        <div class="related-material-item">
+          <div>
+            <h3 class="h6 fw-semibold mb-1">{{ material.title }}</h3>
+            <p class="text-muted mb-0">{{ material.material_type|replace("_", " ")|title }}</p>
+          </div>
+          <div class="opportunity-actions related-material-actions d-flex justify-content-end gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="{{ url_for('materials.detail', material_id=material.id) }}">View</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('materials.edit', material_id=material.id) }}">Edit</a>
+            <form method="POST" action="{{ url_for('opportunities.unlink_material', opportunity_id=opportunity.id, material_id=material.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button class="btn btn-outline-secondary btn-sm" type="submit">Unlink</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state text-center py-4">
+        <div class="empty-state-icon mx-auto mb-3">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <h3 class="h5 fw-semibold">No linked materials yet.</h3>
+        <p class="text-muted mb-4">Link a resume, cover letter, essay note, transcript note, or recommendation note from your vault.</p>
+        <a class="btn btn-primary app-action" href="{{ url_for('opportunities.link_material', opportunity_id=opportunity.id) }}">Link material</a>
       </div>
       {% endif %}
     </div>

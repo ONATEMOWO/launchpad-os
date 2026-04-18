@@ -353,6 +353,38 @@ textarea {
   flex-shrink: 0;
 }
 
+.readiness-summary {
+  padding: 1rem;
+  background-color: #fbfcfd;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+}
+
+.readiness-missing-list {
+  padding-left: 1.25rem;
+  color: #495057;
+}
+
+.related-material-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.related-material-item {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.related-material-actions {
+  flex-shrink: 0;
+}
+
 .workspace-metric,
 .workspace-panel {
   padding: 1.5rem;
@@ -556,6 +588,15 @@ textarea {
   }
 
   .checklist-actions {
+    justify-content: flex-start !important;
+  }
+
+  .related-material-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .related-material-actions {
     justify-content: flex-start !important;
   }
 

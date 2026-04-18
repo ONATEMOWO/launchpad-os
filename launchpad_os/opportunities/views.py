@@ -45,7 +45,9 @@ def _get_owned_opportunity_or_404(opportunity_id):
 
 def _get_owned_material_or_404(material_id):
     """Return a material owned by the current user."""
-    return Material.query.filter_by(id=material_id, user_id=current_user.id).first_or_404()
+    return Material.query.filter_by(
+        id=material_id, user_id=current_user.id
+    ).first_or_404()
 
 
 def _material_choice_label(material):
@@ -62,7 +64,9 @@ def _available_materials_for(opportunity):
         .order_by(Material.updated_at.desc())
         .all()
     )
-    return [material for material in materials if material.id not in linked_material_ids]
+    return [
+        material for material in materials if material.id not in linked_material_ids
+    ]
 
 
 @blueprint.route("/new/", methods=["GET", "POST"])
@@ -121,9 +125,13 @@ def detail(opportunity_id):
         noun = "requirement" if count == 1 else "requirements"
         next_step_message = f"Next step: complete {count} remaining {noun}."
     elif not linked_materials:
-        next_step_message = "Next step: link a saved material to support this application."
+        next_step_message = (
+            "Next step: link a saved material to support this application."
+        )
     else:
-        next_step_message = "Next step: review linked materials and confirm the application is ready."
+        next_step_message = (
+            "Next step: review linked materials and confirm the application is ready."
+        )
 
     return render_template(
         "opportunities/detail.html",
@@ -146,7 +154,8 @@ def link_material(opportunity_id):
     available_materials = _available_materials_for(opportunity)
     form = MaterialLinkForm()
     form.material_id.choices = [
-        (material.id, _material_choice_label(material)) for material in available_materials
+        (material.id, _material_choice_label(material))
+        for material in available_materials
     ]
     if form.validate_on_submit():
         material = _get_owned_material_or_404(form.material_id.data)

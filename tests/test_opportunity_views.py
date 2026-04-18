@@ -4,7 +4,12 @@ from flask import url_for
 
 from launchpad_os.opportunities.models import Opportunity
 
-from .factories import OpportunityFactory, UserFactory
+from .factories import (
+    MaterialFactory,
+    OpportunityFactory,
+    RequirementItemFactory,
+    UserFactory,
+)
 
 
 def login(testapp, user):
@@ -259,3 +264,145 @@ class TestOpportunityViews:
         db.session.refresh(opportunity)
 
         assert opportunity.status == "archived"
+
+    def test_owner_can_link_material_to_opportunity(self, user, testapp, db):
+        """Owners can link their saved materials to their opportunities."""
+        opportunity = OpportunityFactory(user=user, title="Research Internship")
+        material = MaterialFactory(user=user, title="Research Resume")
+        db.session.commit()
+        login(testapp, user)
+        res = testapp.get(
+            url_for("opportunities.link_material", opportunity_id=opportunity.id)
+        )
+        form = res.forms["linkMaterialForm"]
+        form["material_id"] = str(material.id)
+
+        res = form.submit().follow()
+        db.session.expire_all()
+        updated_opportunity = Opportunity.get_by_id(opportunity.id)
+
+        assert res.status_code == 200
+        assert "Material linked." in res
+        assert "Research Resume" in res
+        assert material in updated_opportunity.materials
+
+    def test_owner_can_unlink_material_from_opportunity(self, user, testapp, db):
+        """Owners can unlink materials from their opportunities."""
+        opportunity = OpportunityFactory(user=user)
+        material = MaterialFactory(user=user, title="Essay Notes")
+        opportunity.materials.append(material)
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for(
+                "opportunities.unlink_material",
+                opportunity_id=opportunity.id,
+                material_id=material.id,
+            )
+        ).follow()
+        db.session.expire_all()
+        updated_opportunity = Opportunity.get_by_id(opportunity.id)
+
+        assert res.status_code == 200
+        assert "Material unlinked." in res
+        assert material not in updated_opportunity.materials
+
+    def test_non_owner_cannot_link_material_to_opportunity(self, user, testapp, db):
+        """Users cannot link materials to opportunities they do not own."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user)
+        material = MaterialFactory(user=user)
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for("opportunities.link_material", opportunity_id=opportunity.id),
+            {"material_id": material.id},
+            status=404,
+        )
+
+    def test_user_cannot_link_another_users_material(self, user, testapp, db):
+        """Users cannot link another user's materials to their opportunity."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=user)
+        material = MaterialFactory(user=other_user, title="Other Resume")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for("opportunities.link_material", opportunity_id=opportunity.id),
+            {"material_id": material.id},
+        )
+        db.session.expire_all()
+        updated_opportunity = Opportunity.get_by_id(opportunity.id)
+
+        assert res.status_code == 200
+        assert material not in updated_opportunity.materials
+
+    def test_non_owner_cannot_unlink_material(self, user, testapp, db):
+        """Users cannot unlink materials from another user's opportunity."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user)
+        material = MaterialFactory(user=other_user)
+        opportunity.materials.append(material)
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for(
+                "opportunities.unlink_material",
+                opportunity_id=opportunity.id,
+                material_id=material.id,
+            ),
+            status=404,
+        )
+        db.session.expire_all()
+        updated_opportunity = Opportunity.get_by_id(opportunity.id)
+
+        assert material in updated_opportunity.materials
+
+    def test_related_materials_appear_on_detail_page(self, user, testapp, db):
+        """Opportunity detail shows linked materials."""
+        opportunity = OpportunityFactory(user=user, title="Scholarship Application")
+        material = MaterialFactory(
+            user=user,
+            title="Scholarship Essay Draft",
+            material_type="essay",
+        )
+        opportunity.materials.append(material)
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Related Materials" in res
+        assert "Scholarship Essay Draft" in res
+        assert "Essay" in res
+        assert url_for("materials.detail", material_id=material.id) in res
+
+    def test_readiness_summary_lists_missing_items(self, user, testapp, db):
+        """Opportunity detail summarizes incomplete requirement work."""
+        opportunity = OpportunityFactory(user=user)
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Upload transcript",
+            is_completed=False,
+        )
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Review resume",
+            is_completed=True,
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Next step: complete 1 remaining requirement." in res
+        assert "Still needs attention:" in res
+        assert "Upload transcript" in res
