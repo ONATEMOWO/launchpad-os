@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Requirement checklist view tests."""
+import pytest
 from flask import url_for
 
 from launchpad_os.requirements.models import RequirementItem
+from launchpad_os.requirements.views import CHECKLIST_TEMPLATES
 
 from .factories import OpportunityFactory, RequirementItemFactory, UserFactory
 
@@ -220,3 +222,85 @@ class TestRequirementViews:
 
         assert "0 of 0 complete" in res
         assert "No requirements yet." in res
+
+    def test_owner_can_generate_template_checklist_items(self, user, testapp, db):
+        """Owners can generate starter checklist items."""
+        opportunity = OpportunityFactory(user=user, category="internship")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for("requirements.generate_template", opportunity_id=opportunity.id)
+        ).follow()
+
+        assert res.status_code == 200
+        assert "Added 5 starter checklist item(s)." in res
+        for title in CHECKLIST_TEMPLATES["internship"]:
+            assert title in res
+
+    def test_non_owner_cannot_generate_template_checklist_items(
+        self, user, testapp, db
+    ):
+        """Users cannot generate checklist items for opportunities they do not own."""
+        other_user = UserFactory(password="myprecious")
+        opportunity = OpportunityFactory(user=other_user, category="scholarship")
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for("requirements.generate_template", opportunity_id=opportunity.id),
+            status=404,
+        )
+
+        assert (
+            RequirementItem.query.filter_by(opportunity_id=opportunity.id).count() == 0
+        )
+
+    def test_template_generation_does_not_duplicate_existing_titles(
+        self, user, testapp, db
+    ):
+        """Generating a template only adds missing titles."""
+        opportunity = OpportunityFactory(user=user, category="internship")
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Update resume",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for("requirements.generate_template", opportunity_id=opportunity.id)
+        ).follow()
+        testapp.post(
+            url_for("requirements.generate_template", opportunity_id=opportunity.id)
+        ).follow()
+
+        requirements = RequirementItem.query.filter_by(
+            opportunity_id=opportunity.id
+        ).all()
+        titles = [requirement.title for requirement in requirements]
+
+        assert len(requirements) == 5
+        assert titles.count("Update resume") == 1
+
+    @pytest.mark.parametrize(
+        ("category", "expected_title"),
+        [
+            ("internship", "Prepare portfolio or GitHub link"),
+            ("scholarship", "Request recommendation"),
+            ("research", "Draft outreach email"),
+        ],
+    )
+    def test_correct_template_is_used_for_opportunity_category(
+        self, user, testapp, db, category, expected_title
+    ):
+        """Generated items come from the opportunity category template."""
+        opportunity = OpportunityFactory(user=user, category=category)
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for("requirements.generate_template", opportunity_id=opportunity.id)
+        ).follow()
+
+        assert expected_title in res

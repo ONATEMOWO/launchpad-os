@@ -10,6 +10,30 @@ from launchpad_os.utils import flash_errors
 
 blueprint = Blueprint("requirements", __name__, static_folder="../static")
 
+CHECKLIST_TEMPLATES = {
+    "internship": [
+        "Update resume",
+        "Draft or tailor cover letter",
+        "Review application link",
+        "Prepare portfolio or GitHub link",
+        "Submit application form",
+    ],
+    "scholarship": [
+        "Draft essay or personal statement",
+        "Prepare transcript",
+        "Request recommendation",
+        "Review eligibility requirements",
+        "Submit application before deadline",
+    ],
+    "research": [
+        "Review project or lab description",
+        "Prepare resume or CV",
+        "Draft outreach email",
+        "List relevant coursework or experience",
+        "Identify recommendation/reference if needed",
+    ],
+}
+
 
 def _get_owned_opportunity_or_404(opportunity_id):
     """Return an opportunity owned by the current user."""
@@ -26,6 +50,11 @@ def _get_owned_requirement_or_404(requirement_id):
         .filter(Opportunity.user_id == current_user.id)
         .first_or_404()
     )
+
+
+def _normalized_title(title):
+    """Normalize requirement titles for simple duplicate detection."""
+    return title.strip().lower()
 
 
 @blueprint.route(
@@ -48,6 +77,35 @@ def new(opportunity_id):
     if form.errors:
         flash_errors(form)
     return render_template("requirements/new.html", form=form, opportunity=opportunity)
+
+
+@blueprint.route(
+    "/opportunities/<int:opportunity_id>/requirements/generate/", methods=["POST"]
+)
+@login_required
+def generate_template(opportunity_id):
+    """Generate starter checklist items for an owned opportunity."""
+    opportunity = _get_owned_opportunity_or_404(opportunity_id)
+    template_titles = CHECKLIST_TEMPLATES.get(opportunity.category, [])
+    existing_titles = {
+        _normalized_title(requirement.title)
+        for requirement in opportunity.requirement_items
+    }
+    created_count = 0
+
+    for title in template_titles:
+        normalized_title = _normalized_title(title)
+        if normalized_title in existing_titles:
+            continue
+        RequirementItem.create(title=title, opportunity_id=opportunity.id)
+        existing_titles.add(normalized_title)
+        created_count += 1
+
+    if created_count:
+        flash(f"Added {created_count} starter checklist item(s).", "success")
+    else:
+        flash("Checklist already includes the starter items.", "info")
+    return redirect(url_for("opportunities.detail", opportunity_id=opportunity.id))
 
 
 @blueprint.route("/requirements/<int:requirement_id>/edit/", methods=["GET", "POST"])

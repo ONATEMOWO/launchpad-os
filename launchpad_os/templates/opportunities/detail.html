@@ -75,9 +75,17 @@
           <h2 class="h4 fw-semibold mb-2">Application requirements</h2>
           <p class="text-muted mb-0">Track the tasks and materials needed before this application is complete.</p>
         </div>
-        <a class="btn btn-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">
-          <i class="fa-solid fa-plus me-2"></i>Add requirement
-        </a>
+        {% if requirement_items %}
+        <div class="detail-actions d-flex flex-wrap gap-2">
+          <form method="POST" action="{{ url_for('requirements.generate_template', opportunity_id=opportunity.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button class="btn btn-outline-primary app-action" type="submit">Generate starter checklist</button>
+          </form>
+          <a class="btn btn-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">
+            <i class="fa-solid fa-plus me-2"></i>Add requirement
+          </a>
+        </div>
+        {% endif %}
       </div>
 
       <div class="checklist-summary mb-4">
@@ -145,7 +153,13 @@
         </div>
         <h3 class="h5 fw-semibold">No requirements yet.</h3>
         <p class="text-muted mb-4">Add checklist items such as resume, transcript, essay, recommendation, or submission confirmation.</p>
-        <a class="btn btn-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">Add first requirement</a>
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+          <form method="POST" action="{{ url_for('requirements.generate_template', opportunity_id=opportunity.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button class="btn btn-primary app-action" type="submit">Generate starter checklist</button>
+          </form>
+          <a class="btn btn-outline-primary app-action" href="{{ url_for('requirements.new', opportunity_id=opportunity.id) }}">Add first requirement</a>
+        </div>
       </div>
       {% endif %}
     </div>
