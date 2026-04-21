@@ -22,6 +22,13 @@
           <div class="workspace-quick-actions">
             <p class="detail-label mb-3">Quick actions</p>
             <div class="workspace-action-grid">
+              <a class="workspace-action-card" href="{{ url_for('opportunities.capture') }}">
+                <span class="workspace-action-icon"><i class="fa-solid fa-bolt"></i></span>
+                <span>
+                  <span class="fw-semibold d-block">Quick capture</span>
+                  <span class="text-muted small">Paste a link or rough notes and review a prefilled form.</span>
+                </span>
+              </a>
               <a class="workspace-action-card" href="{{ url_for('opportunities.new') }}">
                 <span class="workspace-action-icon"><i class="fa-solid fa-plus"></i></span>
                 <span>

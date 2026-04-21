@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Opportunity form tests."""
 
-from launchpad_os.opportunities.forms import OpportunityForm
+from launchpad_os.opportunities.forms import OpportunityCaptureForm, OpportunityForm
 
 
 class TestOpportunityForm:
@@ -106,3 +106,22 @@ class TestOpportunityForm:
 
         assert ("planning", "Preparing") in form.status.choices
         assert ("in progress", "In Progress") in form.status.choices
+
+
+class TestOpportunityCaptureForm:
+    """Quick capture form tests."""
+
+    def test_validate_accepts_rough_details(self, db):
+        """Quick capture can start from notes alone."""
+        form = OpportunityCaptureForm(details="Research opening shared by advisor.")
+
+        assert form.validate() is True
+
+    def test_validate_requires_at_least_one_detail(self, db):
+        """Quick capture rejects empty submissions."""
+        form = OpportunityCaptureForm()
+
+        assert form.validate() is False
+        assert (
+            "Add at least one detail to capture an opportunity." in form.details.errors
+        )

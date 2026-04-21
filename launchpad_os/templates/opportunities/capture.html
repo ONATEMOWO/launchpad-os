@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Quick Capture | LaunchPad OS{% endblock %}
+{% block meta_description %}Quickly capture a new opportunity in LaunchPad OS and review the prefilled details before saving.{% endblock %}
+
+{% block content %}
+<section class="app-section">
+  <div class="container app-container app-container-narrow">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+          <div>
+            <p class="eyebrow text-primary mb-2">Quick Capture</p>
+            <h1 class="fw-semibold mb-2">Capture opportunity</h1>
+            <p class="text-muted mb-0">Paste what you have now and review a prefilled opportunity form before saving. You can refine everything afterward.</p>
+          </div>
+          <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Back to opportunities</a>
+        </div>
+
+        <div class="app-card form-card">
+          <form id="quickCaptureForm" method="POST" action="" role="form">
+            {{ form.csrf_token }}
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">What do you know so far?</h2>
+              <p class="text-muted mb-0">Quick Capture is helpful when you only have a link, a rough title, or a few notes and want to save the opportunity before cleaning it up.</p>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-md-6">
+                {{ form.title.label(class_="form-label") }}
+                {{ form.title(placeholder="Software Engineering Internship", class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.organization.label(class_="form-label") }}
+                {{ form.organization(placeholder="Organization name if known", class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.link.label(class_="form-label") }}
+                {{ form.link(placeholder="https://example.com/application", class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.deadline_text.label(class_="form-label") }}
+                {{ form.deadline_text(placeholder="2026-05-15 or 05/15/2026", class_="form-control") }}
+                <small class="form-text text-muted">If the date format is unclear, LaunchPad OS keeps the deadline note in the opportunity notes.</small>
+              </div>
+              <div class="col-12">
+                {{ form.details.label(class_="form-label") }}
+                {{ form.details(placeholder="Paste the opportunity description, requirements, application link, or any rough notes here.", class_="form-control", rows="7") }}
+              </div>
+            </div>
+
+            <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
+              <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Cancel</a>
+              <button class="btn btn-primary" type="submit">Review prefilled form</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

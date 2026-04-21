@@ -30,6 +30,10 @@ class TestOpportunityViews:
         """Anonymous users cannot view opportunities."""
         testapp.get(url_for("opportunities.index"), status=401)
 
+    def test_anonymous_user_cannot_access_capture(self, testapp):
+        """Anonymous users cannot access quick capture."""
+        testapp.get(url_for("opportunities.capture"), status=401)
+
     def test_logged_in_user_can_access_index(self, user, testapp):
         """Logged-in users can view their opportunity list."""
         login(testapp, user)
@@ -37,6 +41,15 @@ class TestOpportunityViews:
 
         assert res.status_code == 200
         assert "Opportunities" in res
+
+    def test_logged_in_user_can_access_capture(self, user, testapp):
+        """Logged-in users can open quick capture."""
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+
+        assert res.status_code == 200
+        assert "Capture opportunity" in res
+        assert "Quick Capture" in res
 
     def test_workspace_redirects_to_opportunities(self, user, testapp):
         """The old workspace page redirects to the dashboard."""
@@ -78,6 +91,91 @@ class TestOpportunityViews:
         opportunity = Opportunity.query.filter_by(
             title="Campus Research Assistant"
         ).one()
+        assert opportunity.user == user
+
+    def test_logged_in_user_can_quick_capture_and_create_opportunity(
+        self, user, testapp
+    ):
+        """Quick capture pre-fills the form and creates an opportunity."""
+        old_count = len(Opportunity.query.all())
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+        form = res.forms["quickCaptureForm"]
+        form["title"] = "Summer Research Fellowship"
+        form["organization"] = "Campus Lab"
+        form["details"] = "Shared by faculty advisor."
+
+        review = form.submit()
+
+        assert review.status_code == 200
+        assert "Review captured opportunity" in review
+
+        save_form = review.forms["opportunityForm"]
+        res = save_form.submit().follow()
+
+        assert res.status_code == 200
+        assert "Opportunity added." in res
+        assert "Summer Research Fellowship" in res
+        assert len(Opportunity.query.all()) == old_count + 1
+
+    def test_quick_capture_saves_pasted_url_as_link(self, user, testapp):
+        """A pasted URL is saved as the opportunity link."""
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+        form = res.forms["quickCaptureForm"]
+        form["title"] = "Scholarship Packet"
+        form["organization"] = "Example Foundation"
+        form["details"] = "Application page: https://example.com/scholarship/apply"
+
+        review = form.submit()
+        save_form = review.forms["opportunityForm"]
+        res = save_form.submit().follow()
+
+        opportunity = Opportunity.query.filter_by(title="Scholarship Packet").one()
+
+        assert opportunity.link == "https://example.com/scholarship/apply"
+        assert "https://example.com/scholarship/apply" in res
+
+    def test_quick_capture_saves_longer_description_as_notes(self, user, testapp):
+        """Longer capture details carry into opportunity notes."""
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+        form = res.forms["quickCaptureForm"]
+        form["title"] = "Policy Internship"
+        form["organization"] = "City Office"
+        form["details"] = (
+            "Paid summer role with writing sample requirement and supervisor email."
+        )
+
+        review = form.submit()
+        save_form = review.forms["opportunityForm"]
+        res = save_form.submit().follow()
+
+        opportunity = Opportunity.query.filter_by(title="Policy Internship").one()
+
+        expected_notes = (
+            "Paid summer role with writing sample requirement and supervisor email."
+        )
+
+        assert opportunity.notes == expected_notes
+        assert "writing sample requirement" in res
+
+    def test_quick_capture_created_opportunity_belongs_to_current_user(
+        self, user, testapp
+    ):
+        """Quick capture creates an owned opportunity."""
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+        form = res.forms["quickCaptureForm"]
+        form["title"] = "Design Fellowship"
+        form["organization"] = "Innovation Studio"
+
+        review = form.submit()
+        save_form = review.forms["opportunityForm"]
+        save_form.submit().follow()
+
+        opportunity = Opportunity.query.filter_by(title="Design Fellowship").one()
+
         assert opportunity.user == user
 
     def test_user_only_sees_own_opportunities(self, user, testapp, db):

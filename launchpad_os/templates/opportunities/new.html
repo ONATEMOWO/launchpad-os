@@ -10,15 +10,20 @@
       <div class="col-lg-10">
         <div class="app-page-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
           <div>
-            <p class="eyebrow text-primary mb-2">Opportunity Tracking</p>
-            <h1 class="fw-semibold mb-2">Add opportunity</h1>
-            <p class="text-muted mb-0">Start with the essentials now, then come back to build the checklist, materials, and readiness details around the packet.</p>
+            <p class="eyebrow text-primary mb-2">{{ page_eyebrow|default('Opportunity Tracking') }}</p>
+            <h1 class="fw-semibold mb-2">{{ page_heading|default('Add opportunity') }}</h1>
+            <p class="text-muted mb-0">{{ page_description|default('Start with the essentials now, then come back to build the checklist, materials, and readiness details around the packet.') }}</p>
           </div>
-          <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Back to list</a>
+          <a class="btn btn-outline-secondary" href="{{ back_url|default(url_for('opportunities.index')) }}">{{ back_label|default('Back to list') }}</a>
         </div>
 
         <div class="app-card form-card">
-          <form method="POST" action="" role="form">
+          {% if review_notice %}
+          <div class="alert alert-info app-alert mb-4" role="status">
+            {{ review_notice }}
+          </div>
+          {% endif %}
+          <form id="opportunityForm" method="POST" action="{{ form_action|default('') }}" role="form">
             {{ form.csrf_token }}
             <div class="form-card-section">
               <h2 class="h5 fw-semibold mb-1">Opportunity details</h2>
@@ -68,8 +73,8 @@
               </div>
             </div>
             <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
-              <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Cancel</a>
-              <button class="btn btn-primary" type="submit">Save opportunity</button>
+              <a class="btn btn-outline-secondary" href="{{ back_url|default(url_for('opportunities.index')) }}">Cancel</a>
+              <button class="btn btn-primary" type="submit">{{ submit_label|default('Save opportunity') }}</button>
             </div>
           </form>
         </div>

@@ -35,6 +35,39 @@ class OpportunityForm(FlaskForm):
     notes = TextAreaField("Notes", validators=[Optional()])
 
 
+class OpportunityCaptureForm(FlaskForm):
+    """Quick intake form for pre-filling an opportunity."""
+
+    title = StringField("Rough title", validators=[Optional(), Length(max=120)])
+    organization = StringField("Organization", validators=[Optional(), Length(max=120)])
+    link = StringField("Application link", validators=[Optional(), Length(max=255)])
+    deadline_text = StringField(
+        "Deadline text or date", validators=[Optional(), Length(max=80)]
+    )
+    details = TextAreaField("Description or notes", validators=[Optional()])
+
+    def validate(self, extra_validators=None):
+        """Require at least one field so the capture step is useful."""
+        is_valid = super().validate(extra_validators=extra_validators)
+        if not is_valid:
+            return False
+
+        has_input = any(
+            [
+                (self.title.data or "").strip(),
+                (self.organization.data or "").strip(),
+                (self.link.data or "").strip(),
+                (self.deadline_text.data or "").strip(),
+                (self.details.data or "").strip(),
+            ]
+        )
+        if has_input:
+            return True
+
+        self.details.errors.append("Add at least one detail to capture an opportunity.")
+        return False
+
+
 class MaterialLinkForm(FlaskForm):
     """Link an existing material to an opportunity."""
 

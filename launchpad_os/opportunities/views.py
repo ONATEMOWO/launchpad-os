@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 """Opportunity views."""
 import datetime as dt
+import re
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 
 from launchpad_os.materials.models import Material
-from launchpad_os.opportunities.forms import MaterialLinkForm, OpportunityForm
+from launchpad_os.opportunities.forms import (
+    MaterialLinkForm,
+    OpportunityCaptureForm,
+    OpportunityForm,
+)
 from launchpad_os.opportunities.models import (
     CATEGORY_CHOICES,
     PRIORITY_CHOICES,
@@ -22,6 +27,7 @@ blueprint = Blueprint(
 )
 
 DEADLINE_APPROACHING_DAYS = 30
+URL_PATTERN = re.compile(r"https?://[^\s]+")
 
 
 @blueprint.route("/")
@@ -117,6 +123,82 @@ def _available_materials_for(opportunity):
     return [
         material for material in materials if material.id not in linked_material_ids
     ]
+
+
+def _extract_first_url(*values):
+    """Extract the first URL-like value from a series of text inputs."""
+    for value in values:
+        if not value:
+            continue
+        match = URL_PATTERN.search(value)
+        if match:
+            return match.group(0).rstrip(".,);]")
+    return None
+
+
+def _parse_capture_deadline(deadline_text):
+    """Parse a small set of simple date formats from capture input."""
+    if not deadline_text:
+        return None
+
+    normalized = deadline_text.strip()
+    if not normalized:
+        return None
+
+    formats = ["%Y-%m-%d", "%m/%d/%Y", "%m-%d-%Y"]
+    for fmt in formats:
+        try:
+            return dt.datetime.strptime(normalized, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _build_capture_prefill(form):
+    """Build deterministic opportunity defaults from quick capture input."""
+    title = (form.title.data or "").strip()
+    organization = (form.organization.data or "").strip()
+    details = (form.details.data or "").strip()
+    deadline_text = (form.deadline_text.data or "").strip()
+    deadline = _parse_capture_deadline(deadline_text)
+    link = _extract_first_url(form.link.data, details)
+
+    notes_parts = []
+    if details:
+        notes_parts.append(details)
+    if deadline_text and not deadline:
+        notes_parts.append(f"Deadline note: {deadline_text}")
+
+    return {
+        "title": title,
+        "organization": organization,
+        "category": "internship",
+        "deadline": deadline,
+        "status": "saved",
+        "priority": "medium",
+        "link": link or "",
+        "notes": "\n\n".join(notes_parts),
+    }
+
+
+def _render_opportunity_create_form(form, **overrides):
+    """Render the opportunity create template with configurable copy."""
+    context = {
+        "form": form,
+        "form_action": "",
+        "page_eyebrow": "Opportunity Tracking",
+        "page_heading": "Add opportunity",
+        "page_description": (
+            "Start with the essentials now, then come back to build the "
+            "checklist, materials, and readiness details around the packet."
+        ),
+        "back_url": url_for("opportunities.index"),
+        "back_label": "Back to list",
+        "submit_label": "Save opportunity",
+        "review_notice": None,
+    }
+    context.update(overrides)
+    return render_template("opportunities/new.html", **context)
 
 
 def _deadline_packet_context(deadline, today):
@@ -247,7 +329,7 @@ def new():
     """Create a new opportunity."""
     form = OpportunityForm()
     if form.validate_on_submit():
-        Opportunity.create(
+        opportunity = Opportunity.create(
             title=form.title.data,
             organization=form.organization.data,
             category=form.category.data,
@@ -259,10 +341,39 @@ def new():
             user_id=current_user.id,
         )
         flash("Opportunity added.", "success")
-        return redirect(url_for("opportunities.index"))
+        return redirect(url_for("opportunities.detail", opportunity_id=opportunity.id))
     if form.errors:
         flash_errors(form)
-    return render_template("opportunities/new.html", form=form)
+    return _render_opportunity_create_form(form)
+
+
+@blueprint.route("/capture/", methods=["GET", "POST"])
+@login_required
+def capture():
+    """Quickly capture rough opportunity details before full review."""
+    form = OpportunityCaptureForm()
+    if form.validate_on_submit():
+        prefill = _build_capture_prefill(form)
+        review_form = OpportunityForm(formdata=None, data=prefill)
+        return _render_opportunity_create_form(
+            review_form,
+            form_action=url_for("opportunities.new"),
+            page_eyebrow="Quick Capture",
+            page_heading="Review captured opportunity",
+            page_description=(
+                "Quick Capture prefilled what it could. Review the details below, "
+                "make changes, and save when you are ready."
+            ),
+            back_url=url_for("opportunities.capture"),
+            back_label="Back to capture",
+            review_notice=(
+                "Quick Capture is best for saving a link, rough title, or notes "
+                "now and refining the packet details afterward."
+            ),
+        )
+    if form.errors:
+        flash_errors(form)
+    return render_template("opportunities/capture.html", form=form)
 
 
 @blueprint.route("/<int:opportunity_id>/")
