@@ -29,18 +29,18 @@
 
     {% block css %}{% endblock %}
   </head>
-  <body class="{% block body_class %}{% endblock %}">
+  <body class="app-body {% block body_class %}{% endblock %}">
     {% block body %} {% include "nav.html" %}
 
     <header>{% block header %}{% endblock %}</header>
 
-    <main role="main">
+    <main class="app-main-shell" role="main">
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
       messages %}
-      <div class="container mt-3">
+      <div class="container app-container app-flash-stack mt-3">
         <div class="col-12">
           {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">
+          <div class="alert alert-{{ category }} app-alert">
             <a class="close" title="Close" href="#" data-bs-dismiss="alert"
               >&times;</a
             >

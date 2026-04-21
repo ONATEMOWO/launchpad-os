@@ -12,7 +12,7 @@
           <div>
             <p class="eyebrow text-primary mb-2">Related Materials</p>
             <h1 class="fw-semibold mb-2">Link material</h1>
-            <p class="text-muted mb-0">Connect an existing saved material to {{ opportunity.title }}.</p>
+            <p class="text-muted mb-0">Connect an existing material from your vault so this packet has the right supporting drafts and notes nearby.</p>
           </div>
           <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Back to opportunity</a>
         </div>
@@ -23,7 +23,7 @@
             {{ form.csrf_token }}
             <div class="form-card-section">
               <h2 class="h5 fw-semibold mb-1">Choose a saved material</h2>
-              <p class="text-muted mb-0">Only materials from your vault that are not already linked to this opportunity are listed.</p>
+              <p class="text-muted mb-0">Only materials from your vault that are not already linked to this opportunity appear here.</p>
             </div>
             <div class="mb-4">
               {{ form.material_id.label(class_="form-label") }}
@@ -40,7 +40,7 @@
               <i class="fa-solid fa-folder-open"></i>
             </div>
             <h2 class="h5 fw-semibold">No available materials to link.</h2>
-            <p class="text-muted mb-4">Create a new material or unlink an existing one before linking another item to this opportunity.</p>
+            <p class="text-muted mb-4">Create a new material or unlink an existing one before adding another item to this packet.</p>
             <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
               <a class="btn btn-primary app-action" href="{{ url_for('materials.new') }}">Add material</a>
               <a class="btn btn-outline-secondary app-action" href="{{ url_for('opportunities.detail', opportunity_id=opportunity.id) }}">Back to opportunity</a>
