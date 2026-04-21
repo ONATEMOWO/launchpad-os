@@ -34,6 +34,10 @@ class TestOpportunityViews:
         """Anonymous users cannot access quick capture."""
         testapp.get(url_for("opportunities.capture"), status=401)
 
+    def test_anonymous_user_cannot_export_opportunities(self, testapp):
+        """Anonymous users cannot export opportunity data."""
+        testapp.get(url_for("opportunities.export"), status=401)
+
     def test_logged_in_user_can_access_index(self, user, testapp):
         """Logged-in users can view their opportunity list."""
         login(testapp, user)
@@ -284,6 +288,50 @@ class TestOpportunityViews:
 
         assert "Private Amazon Internship" not in res
         assert "No matching opportunities found." in res
+
+    def test_authenticated_user_can_export_opportunities_csv(self, user, testapp, db):
+        """Authenticated users can export their opportunities as CSV."""
+        opportunity = OpportunityFactory(
+            user=user,
+            title="Research Fellowship",
+            organization="Science Center",
+            category="research",
+            status="submitted",
+            priority="high",
+            link="https://example.com/fellowship",
+            notes="Finalize transcript request.",
+            deadline=dt.date(2026, 5, 15),
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.export"))
+
+        assert res.status_code == 200
+        assert res.content_type.startswith("text/csv")
+        expected_disposition = 'attachment; filename="launchpad-opportunities.csv"'
+        assert res.headers["Content-Disposition"] == expected_disposition
+        assert "title,organization,category,status,priority,deadline,link" in res.text
+        assert opportunity.title in res.text
+        assert opportunity.organization in res.text
+        assert "2026-05-15" in res.text
+
+    def test_opportunity_export_excludes_other_users_records(self, user, testapp, db):
+        """Opportunity CSV export only includes the current user's records."""
+        other_user = UserFactory(password="myprecious")
+        own_opportunity = OpportunityFactory(user=user, title="My Scholarship")
+        other_opportunity = OpportunityFactory(
+            user=other_user,
+            title="Private Internship",
+            organization="Private Org",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.export"))
+
+        assert own_opportunity.title in res.text
+        assert other_opportunity.title not in res.text
 
     def test_owner_can_view_detail_page(self, user, testapp, db):
         """Owners can view full opportunity details."""

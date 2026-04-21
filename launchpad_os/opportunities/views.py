@@ -20,7 +20,7 @@ from launchpad_os.opportunities.models import (
     Opportunity,
 )
 from launchpad_os.requirements.models import RequirementItem
-from launchpad_os.utils import flash_errors
+from launchpad_os.utils import csv_response, flash_errors
 
 blueprint = Blueprint(
     "opportunities", __name__, url_prefix="/opportunities", static_folder="../static"
@@ -89,6 +89,48 @@ def index():
         status_choices=STATUS_CHOICES,
         category_choices=CATEGORY_CHOICES,
         priority_choices=PRIORITY_CHOICES,
+    )
+
+
+@blueprint.route("/export.csv")
+@login_required
+def export():
+    """Export the current user's opportunities as CSV."""
+    opportunities = (
+        Opportunity.query.filter_by(user_id=current_user.id)
+        .order_by(Opportunity.created_at.desc())
+        .all()
+    )
+    rows = [
+        [
+            opportunity.title,
+            opportunity.organization,
+            opportunity.category,
+            opportunity.status,
+            opportunity.priority,
+            opportunity.deadline.isoformat() if opportunity.deadline else "",
+            opportunity.link or "",
+            opportunity.notes or "",
+            opportunity.created_at.isoformat() if opportunity.created_at else "",
+            opportunity.updated_at.isoformat() if opportunity.updated_at else "",
+        ]
+        for opportunity in opportunities
+    ]
+    return csv_response(
+        "launchpad-opportunities.csv",
+        [
+            "title",
+            "organization",
+            "category",
+            "status",
+            "priority",
+            "deadline",
+            "link",
+            "notes",
+            "created_at",
+            "updated_at",
+        ],
+        rows,
     )
 
 

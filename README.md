@@ -1,173 +1,198 @@
 # LaunchPad OS
 
-A student application workspace for internships, scholarships, and research opportunities.
+LaunchPad OS is a Flask-based student application workspace for tracking internships, scholarships, and research opportunities in one place. It combines opportunity tracking, reusable application materials, checklist management, and readiness guidance so a student can see what still needs work before submitting an application.
 
-## Docker Quickstart
+## Project Summary
 
-This app can be run completely using `Docker` and `docker compose`. **Using Docker is recommended, as it guarantees the application is run using compatible versions of Python and Node**.
+LaunchPad OS was developed as a senior seminar project focused on practical student productivity. The app is intentionally server-rendered and lightweight so the codebase stays readable, easy to explain, and easy to evaluate in a class setting.
 
-There are three main services:
+## Core Features
 
-To run the development version of the app
+- Public landing pages, login, registration, and project overview
+- Authenticated workspace dashboard with readiness and attention views
+- Opportunity tracking with statuses, deadlines, archive/restore, and search/filter
+- Quick Capture intake flow for saving rough opportunity information before refining it
+- Requirement checklists tied to each opportunity
+- Guided checklist templates for internships, scholarships, and research opportunities
+- Materials Vault for resumes, essays, notes, recommendation notes, and related drafts
+- Opportunity-to-material linking
+- Application Packet / Readiness summary on opportunity detail pages
+- CSV export for user-owned opportunities and materials
 
-```bash
-docker compose up flask-dev
-```
+## Technology Stack
 
-To run the production version of the app
+- Python
+- Flask
+- Flask-Login
+- Flask-WTF / WTForms
+- SQLAlchemy
+- SQLite for local development by default
+- Bootstrap 5
+- Jinja templates
+- Webpack / npm for asset bundling
+- pytest + WebTest for tests
 
-```bash
-docker compose up flask-prod
-```
+## Local Setup
 
-The list of `environment:` variables in the `docker compose.yml` file takes precedence over any variables specified in `.env`.
+The recommended local workflow uses a Python virtual environment, npm for frontend assets, and the default SQLite development database.
 
-To run any commands using the `Flask CLI`
-
-```bash
-docker compose run --rm manage <<COMMAND>>
-```
-
-Therefore, to initialize a database you would run
-
-```bash
-docker compose run --rm manage db init
-docker compose run --rm manage db migrate
-docker compose run --rm manage db upgrade
-```
-
-A docker volume `node-modules` is created to store NPM packages and is reused across the dev and prod versions of the application. For the purposes of DB testing with `sqlite`, the file `dev.db` is mounted to all containers. This volume mount should be removed from `docker compose.yml` if a production DB server is used.
-
-Go to `http://localhost:8080`. You will see a pretty welcome screen.
-
-### Running locally
-
-Run the following commands to bootstrap your environment if you are unable to run the application using Docker
+### 1. Clone and enter the project
 
 ```bash
+git clone <your-repo-url>
 cd launchpad_os
+```
+
+### 2. Create and activate a virtual environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install Python dependencies
+
+```bash
 pip install -r requirements/dev.txt
+```
+
+### 4. Install frontend dependencies
+
+```bash
 npm install
-npm run-script build
-npm start  # run the webpack dev server and flask server using concurrently
 ```
 
-Go to `http://localhost:5000`. You will see a pretty welcome screen.
+### 5. Confirm local environment settings
 
-#### Database Initialization (locally)
+This repo includes a development `.env` file with defaults such as:
 
-Once you have installed your DBMS, run the following to create your app's
-database tables and perform the initial migration
+- `FLASK_APP=autoapp.py`
+- `FLASK_ENV=development`
+- `DATABASE_URL=sqlite:////tmp/dev.db`
+
+### 6. Initialize the local database
+
+This repo has Flask-Migrate configured, but it does not currently include a committed `migrations/` directory. For local development, the simplest setup is to create the tables directly:
 
 ```bash
-flask db init
-flask db migrate
-flask db upgrade
+flask shell
 ```
 
-## Deployment
+Then run:
 
-When using Docker, reasonable production defaults are set in `docker compose.yml`
+```python
+from launchpad_os.database import db
+db.create_all()
+exit()
+```
+
+If you want a fresh local database later, remove `/tmp/dev.db` and run `db.create_all()` again.
+
+## Run the App Locally
+
+For local evaluation, use port `5001`:
+
+```bash
+flask run --port 5001
+```
+
+Then open:
 
 ```text
-FLASK_ENV=production
-FLASK_DEBUG=0
+http://127.0.0.1:5001
 ```
 
-Therefore, starting the app in "production" mode is as simple as
+If you want the webpack watcher alongside Flask during active frontend work, you can also use:
 
 ```bash
-docker compose up flask-prod
+npm start
 ```
 
-If running without Docker
+## Running Tests
+
+Run the full test suite:
 
 ```bash
-export FLASK_ENV=production
-export FLASK_DEBUG=0
-export DATABASE_URL="<YOUR DATABASE URL>"
-npm run build   # build assets with webpack
-flask run       # start the flask server
+.venv/bin/pytest
 ```
 
-## Shell
-
-To open the interactive shell, run
+Or with the venv activated:
 
 ```bash
-docker compose run --rm manage shell
-flask shell # If running locally without Docker
+pytest
 ```
 
-By default, you will have access to the flask `app`.
+## Lint / Checks
 
-## Running Tests/Linter
-
-To run all tests, run
+Run the project lint/check command:
 
 ```bash
-docker compose run --rm manage test
-flask test # If running locally without Docker
+PATH=.venv/bin:$PATH .venv/bin/flask lint --check
 ```
 
-To run the linter, run
+Check patch formatting issues before commit:
 
 ```bash
-docker compose run --rm manage lint
-flask lint # If running locally without Docker
+git diff --check
 ```
 
-The `lint` command will attempt to fix any linting/style errors in the code. If you only want to know if the code will pass CI and do not wish for the linter to make changes, add the `--check` argument.
+## Building Assets
 
-## Migrations
-
-Whenever a database migration needs to be made. Run the following commands
+If you change CSS, JavaScript, or other frontend assets, rebuild them with:
 
 ```bash
-docker compose run --rm manage db migrate
-flask db migrate # If running locally without Docker
+PATH=.venv/bin:$PATH npm run build
 ```
 
-This will generate a new migration script. Then run
+If you only change Python files, templates, or docs, an asset rebuild is usually not needed.
 
-```bash
-docker compose run --rm manage db upgrade
-flask db upgrade # If running locally without Docker
-```
+## Recommended Evaluation Flow
 
-To apply the migration.
+1. Create a user account or sign in.
+2. Add an opportunity or use Quick Capture.
+3. Open the opportunity detail page.
+4. Add or generate checklist items.
+5. Add materials and link them to the opportunity.
+6. Review the workspace dashboard.
+7. Export opportunities or materials as CSV from the list pages.
 
-For a full migration command reference, run `docker compose run --rm manage db --help`.
+## CSV Export
 
-If you will deploy your application remotely (e.g on Heroku) you should add the `migrations` folder to version control.
-You can do this after `flask db migrate` by running the following commands
+LaunchPad OS supports authenticated CSV export for user-owned records:
 
-```bash
-git add migrations/*
-git commit -m "Add migrations"
-```
+- `GET /opportunities/export.csv`
+- `GET /materials/export.csv`
 
-Make sure folder `migrations/versions` is not empty.
+Exports are scoped to the current authenticated user and do not include another user's data.
 
-## Asset Management
+## Known Local Development Notes
 
-Files placed inside the `assets` directory and its subdirectories
-(excluding `js` and `css`) will be copied by webpack's
-`file-loader` into the `static/build` directory. In production, the plugin
-`Flask-Static-Digest` zips the webpack content and tags them with a MD5 hash.
-As a result, you must use the `static_url_for` function when including static content,
-as it resolves the correct file name, including the MD5 hash.
-For example
+- The default local database path is `/tmp/dev.db`.
+- The app uses Bootstrap and webpack-managed assets.
+- Flask-Static-Digest is part of the build process for production-style asset output.
+- Tests create and drop an in-memory SQLite database automatically.
+- The repository may show an existing `webob.compat` Python deprecation warning during tests on newer Python versions.
 
-```html
-<link rel="shortcut icon" href="{{static_url_for('static', filename='build/favicon.ico') }}">
-```
+## Documentation
 
-If all of your static files are managed this way, then their filenames will change whenever their
-contents do, and you can ask Flask to tell web browsers that they
-should cache all your assets forever by including the following line
-in ``.env``:
+Additional project notes:
 
-```text
-SEND_FILE_MAX_AGE_DEFAULT=31556926  # one year
-```
+- [Local setup](docs/local_setup.md)
+- [Testing notes](docs/testing.md)
+- [Acknowledgements](docs/acknowledgements.md)
+- [Screenshots folder](docs/screenshots)
+
+## Screenshots
+
+Add final screenshots to `docs/screenshots/` before submission. Suggested captures:
+
+- Public landing page
+- Workspace dashboard
+- Opportunities list
+- Opportunity detail / Application Packet
+- Materials Vault
+- Quick Capture flow
+
+## AI / Open-Source Acknowledgement
+
+This project builds on open-source tools including Flask, SQLAlchemy, Bootstrap, Font Awesome, webpack, and pytest. AI-assisted development support was used for planning, implementation guidance, debugging interpretation, and documentation drafting, with all code and written output reviewed before submission.

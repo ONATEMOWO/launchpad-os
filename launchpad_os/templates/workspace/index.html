@@ -57,6 +57,20 @@
                   <span class="text-muted small">Reuse resumes, essays, recommendation notes, and drafts.</span>
                 </span>
               </a>
+              <a class="workspace-action-card" href="{{ url_for('opportunities.export') }}">
+                <span class="workspace-action-icon"><i class="fa-solid fa-file-arrow-down"></i></span>
+                <span>
+                  <span class="fw-semibold d-block">Export opportunities</span>
+                  <span class="text-muted small">Download your tracked application records as CSV.</span>
+                </span>
+              </a>
+              <a class="workspace-action-card" href="{{ url_for('materials.export') }}">
+                <span class="workspace-action-icon"><i class="fa-solid fa-file-csv"></i></span>
+                <span>
+                  <span class="fw-semibold d-block">Export materials</span>
+                  <span class="text-muted small">Download your materials vault details as CSV.</span>
+                </span>
+              </a>
             </div>
           </div>
         </div>

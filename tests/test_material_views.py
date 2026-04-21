@@ -27,6 +27,10 @@ class TestMaterialViews:
         """Anonymous users cannot create materials."""
         testapp.get(url_for("materials.new"), status=401)
 
+    def test_anonymous_user_cannot_export_materials(self, testapp):
+        """Anonymous users cannot export materials."""
+        testapp.get(url_for("materials.export"), status=401)
+
     def test_logged_in_user_can_access_index(self, user, testapp):
         """Logged-in users can view their materials list."""
         login(testapp, user)
@@ -155,6 +159,42 @@ class TestMaterialViews:
 
         assert "Private Amazon Resume" not in res
         assert "No matching materials found." in res
+
+    def test_authenticated_user_can_export_materials_csv(self, user, testapp, db):
+        """Authenticated users can export their materials as CSV."""
+        material = MaterialFactory(
+            user=user,
+            title="Resume Draft",
+            material_type="resume",
+            link="https://example.com/resume",
+            notes="Revise leadership bullets.",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.export"))
+
+        assert res.status_code == 200
+        assert res.content_type.startswith("text/csv")
+        expected_disposition = 'attachment; filename="launchpad-materials.csv"'
+        assert res.headers["Content-Disposition"] == expected_disposition
+        assert "title,material_type,link,notes,created_at,updated_at" in res.text
+        assert material.title in res.text
+        assert material.link in res.text
+        assert material.notes in res.text
+
+    def test_material_export_excludes_other_users_records(self, user, testapp, db):
+        """Material CSV export only includes the current user's records."""
+        other_user = UserFactory(password="myprecious")
+        own_material = MaterialFactory(user=user, title="My Essay Notes")
+        other_material = MaterialFactory(user=other_user, title="Private Resume")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("materials.export"))
+
+        assert own_material.title in res.text
+        assert other_material.title not in res.text
 
     def test_owner_can_view_detail_page(self, user, testapp, db):
         """Owners can view full material details."""

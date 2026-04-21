@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 from launchpad_os.materials.forms import MaterialForm
 from launchpad_os.materials.models import MATERIAL_TYPE_CHOICES, Material
-from launchpad_os.utils import flash_errors
+from launchpad_os.utils import csv_response, flash_errors
 
 blueprint = Blueprint(
     "materials", __name__, url_prefix="/materials", static_folder="../static"
@@ -44,6 +44,40 @@ def index():
         filters=filters,
         has_filters=any(filters.values()),
         material_type_choices=MATERIAL_TYPE_CHOICES,
+    )
+
+
+@blueprint.route("/export.csv")
+@login_required
+def export():
+    """Export the current user's materials as CSV."""
+    materials = (
+        Material.query.filter_by(user_id=current_user.id)
+        .order_by(Material.updated_at.desc())
+        .all()
+    )
+    rows = [
+        [
+            material.title,
+            material.material_type,
+            material.link or "",
+            material.notes or "",
+            material.created_at.isoformat() if material.created_at else "",
+            material.updated_at.isoformat() if material.updated_at else "",
+        ]
+        for material in materials
+    ]
+    return csv_response(
+        "launchpad-materials.csv",
+        [
+            "title",
+            "material_type",
+            "link",
+            "notes",
+            "created_at",
+            "updated_at",
+        ],
+        rows,
     )
 
 

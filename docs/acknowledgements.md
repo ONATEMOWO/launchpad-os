@@ -1,10 +1,19 @@
 # Acknowledgements
 
-## Tools and Resources
-- Flask starter template generated from cookiecutter-flask
-- Python packages installed through project requirements
-- Frontend assets built using npm and webpack
+## Open-Source Tools
+
+- Flask and the surrounding Flask extension ecosystem
+- SQLAlchemy for relational data modeling
+- Bootstrap for layout and UI structure
+- Font Awesome for interface icons
+- webpack and npm for asset bundling
+- pytest and WebTest for automated verification
+
+## Project Starting Point
+
+- The repository began from a Flask starter template generated with cookiecutter-flask and was then adapted into LaunchPad OS.
 
 ## AI Assistance
-- AI was used for project planning, setup guidance, debugging interpretation, and development workflow support.
-- All generated or suggested work will be reviewed and understood before submission.
+
+- AI assistance was used for planning, implementation support, debugging interpretation, and documentation drafting.
+- All generated or suggested work was reviewed, edited, and understood before inclusion in the project.
