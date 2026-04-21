@@ -248,6 +248,109 @@ textarea {
   margin-bottom: 2rem;
 }
 
+.packet-card {
+  padding-top: 1.75rem;
+}
+
+.packet-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.packet-progress-summary {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.packet-readiness-value {
+  color: #0d6efd;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.packet-status-badge {
+  border: 1px solid transparent;
+}
+
+.packet-status-ready {
+  color: #146c43;
+  background-color: #e9f7ef;
+  border-color: rgba(20, 108, 67, 0.18);
+}
+
+.packet-status-progress {
+  color: #8a5a00;
+  background-color: #fff3cd;
+  border-color: rgba(138, 90, 0, 0.2);
+}
+
+.packet-status-attention {
+  color: #9f1f2f;
+  background-color: #fdecee;
+  border-color: rgba(159, 31, 47, 0.18);
+}
+
+.deadline-status-warning {
+  color: #8a5a00;
+  background-color: #fff3cd;
+  border-color: rgba(138, 90, 0, 0.2);
+}
+
+.deadline-status-danger {
+  color: #9f1f2f;
+  background-color: #fdecee;
+  border-color: rgba(159, 31, 47, 0.18);
+}
+
+.deadline-status-info {
+  color: #0d5abf;
+  background-color: #eaf3ff;
+  border-color: rgba(13, 90, 191, 0.16);
+}
+
+.deadline-status-muted {
+  color: #5f6973;
+  background-color: #f4f6f8;
+  border-color: rgba(95, 105, 115, 0.18);
+}
+
+.packet-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.packet-metric {
+  padding: 1rem;
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  background-color: #fbfcfd;
+}
+
+.packet-metric-label {
+  margin-bottom: 0.35rem;
+  color: #6c757d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.packet-metric-value {
+  margin-bottom: 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.packet-metric-text {
+  color: #6c757d;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -576,6 +679,16 @@ textarea {
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .packet-layout,
+  .packet-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .packet-progress-summary {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .detail-actions,

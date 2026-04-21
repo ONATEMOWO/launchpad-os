@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Opportunity view tests."""
+import datetime as dt
+
 from flask import url_for
 
 from launchpad_os.opportunities.models import Opportunity
@@ -209,6 +211,160 @@ class TestOpportunityViews:
         assert "Science Center" in res
         assert "Draft essay and request transcript." in res
         assert "https://example.com/fellowship" in res
+
+    def test_readiness_summary_renders_on_detail_page(self, user, testapp, db):
+        """Opportunity detail renders the application packet summary."""
+        opportunity = OpportunityFactory(
+            user=user,
+            deadline=dt.date.today() + dt.timedelta(days=10),
+        )
+        material = MaterialFactory(user=user, title="Packet Resume")
+        opportunity.materials.append(material)
+        RequirementItemFactory(
+            opportunity=opportunity, title="Draft essay", is_completed=True
+        )
+        RequirementItemFactory(
+            opportunity=opportunity, title="Request transcript", is_completed=False
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Application Packet" in res
+        assert "Readiness summary" in res
+        assert "50%" in res
+        assert "1 of 2 requirements complete" in res
+        assert "1 linked material connected to this application." in res
+        assert "Deadline approaching" in res
+
+    def test_no_checklist_next_action_appears(self, user, testapp, db):
+        """Opportunity detail prompts checklist generation when nothing exists."""
+        opportunity = OpportunityFactory(user=user)
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Needs attention" in res
+        assert "Next step: generate a starter checklist for this application." in res
+        assert "No checklist items yet." in res
+
+    def test_incomplete_requirements_next_action_appears(self, user, testapp, db):
+        """Opportunity detail prompts remaining checklist work."""
+        opportunity = OpportunityFactory(user=user)
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Upload transcript",
+            is_completed=False,
+        )
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Review resume",
+            is_completed=True,
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "In progress" in res
+        assert "Next step: complete 1 remaining requirement." in res
+        assert "1 requirement still needs attention." in res
+
+    def test_complete_checklist_state_appears(self, user, testapp, db):
+        """Opportunity detail shows a ready state when checklist and materials exist."""
+        opportunity = OpportunityFactory(user=user)
+        opportunity.materials.append(MaterialFactory(user=user, title="Ready Resume"))
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Finalize resume",
+            is_completed=True,
+        )
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Submit application",
+            is_completed=True,
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Ready" in res
+        assert "All checklist items are complete." in res
+        assert (
+            "Next step: review the packet, submit the application, or update the "
+            "status." in res
+        )
+
+    def test_linked_material_count_appears(self, user, testapp, db):
+        """Opportunity detail shows the linked materials count."""
+        opportunity = OpportunityFactory(user=user)
+        opportunity.materials.append(MaterialFactory(user=user, title="Resume"))
+        opportunity.materials.append(MaterialFactory(user=user, title="Essay Notes"))
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "2 linked materials connected to this application." in res
+
+    def test_due_soon_deadline_urgency_and_priority_message_appear(
+        self, user, testapp, db
+    ):
+        """Due-soon incomplete opportunities get deadline urgency guidance."""
+        opportunity = OpportunityFactory(
+            user=user,
+            deadline=dt.date.today() + dt.timedelta(days=5),
+        )
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Submit transcript",
+            is_completed=False,
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Deadline approaching" in res
+        assert "Due in 5 days" in res
+        assert "Next step: prioritize this opportunity." in res
+
+    def test_overdue_deadline_urgency_appears(self, user, testapp, db):
+        """Overdue opportunities render overdue urgency messaging."""
+        opportunity = OpportunityFactory(
+            user=user,
+            deadline=dt.date.today() - dt.timedelta(days=2),
+        )
+        RequirementItemFactory(
+            opportunity=opportunity,
+            title="Submit final application",
+            is_completed=False,
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Overdue" in res
+        assert "Overdue by 2 days" in res
+        assert "Next step: prioritize this opportunity." in res
 
     def test_non_owner_cannot_view_detail_page(self, user, testapp, db):
         """Users cannot view opportunities they do not own."""

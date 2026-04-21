@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """Opportunity views."""
+import datetime as dt
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
@@ -18,6 +20,8 @@ from launchpad_os.utils import flash_errors
 blueprint = Blueprint(
     "opportunities", __name__, url_prefix="/opportunities", static_folder="../static"
 )
+
+DEADLINE_APPROACHING_DAYS = 30
 
 
 @blueprint.route("/")
@@ -115,6 +119,128 @@ def _available_materials_for(opportunity):
     ]
 
 
+def _deadline_packet_context(deadline, today):
+    """Return deadline urgency metadata for the detail page."""
+    if not deadline:
+        return {
+            "days_until_deadline": None,
+            "deadline_label": "No deadline set",
+            "deadline_urgency_label": "No deadline",
+            "deadline_urgency_class": "muted",
+            "is_due_soon": False,
+            "is_overdue": False,
+        }
+
+    days_until_deadline = (deadline - today).days
+    is_overdue = days_until_deadline < 0
+    is_due_soon = 0 <= days_until_deadline <= DEADLINE_APPROACHING_DAYS
+
+    if days_until_deadline == 0:
+        deadline_label = "Due today"
+    elif days_until_deadline == 1:
+        deadline_label = "Due tomorrow"
+    elif is_overdue:
+        deadline_label = f"Overdue by {abs(days_until_deadline)} days"
+    else:
+        deadline_label = f"Due in {days_until_deadline} days"
+
+    if is_overdue:
+        deadline_urgency_label = "Overdue"
+        deadline_urgency_class = "danger"
+    elif is_due_soon:
+        deadline_urgency_label = "Deadline approaching"
+        deadline_urgency_class = "warning"
+    else:
+        deadline_urgency_label = "On track"
+        deadline_urgency_class = "info"
+
+    return {
+        "days_until_deadline": days_until_deadline,
+        "deadline_label": deadline_label,
+        "deadline_urgency_label": deadline_urgency_label,
+        "deadline_urgency_class": deadline_urgency_class,
+        "is_due_soon": is_due_soon,
+        "is_overdue": is_overdue,
+    }
+
+
+def _readiness_status(
+    total_requirements,
+    missing_requirements_count,
+    linked_material_count,
+    is_due_soon,
+    is_overdue,
+):
+    """Return a simple readiness label and style for an opportunity packet."""
+    is_ready = all(
+        [
+            total_requirements > 0,
+            missing_requirements_count == 0,
+            linked_material_count > 0,
+            not is_overdue,
+        ]
+    )
+    needs_attention = any(
+        [
+            total_requirements == 0,
+            is_overdue,
+            is_due_soon and missing_requirements_count > 0,
+        ]
+    )
+
+    if is_ready:
+        return {
+            "readiness_label": "Ready",
+            "readiness_class": "ready",
+        }
+
+    if needs_attention:
+        return {
+            "readiness_label": "Needs attention",
+            "readiness_class": "attention",
+        }
+
+    return {
+        "readiness_label": "In progress",
+        "readiness_class": "progress",
+    }
+
+
+def _next_step_message(
+    total_requirements,
+    missing_requirements_count,
+    linked_material_count,
+    is_due_soon,
+    is_overdue,
+):
+    """Return the next recommended action for an opportunity."""
+    if total_requirements == 0:
+        if is_due_soon or is_overdue:
+            return (
+                "Next step: prioritize this opportunity and generate a starter "
+                "checklist."
+            )
+        return "Next step: generate a starter checklist for this application."
+
+    if (is_due_soon or is_overdue) and missing_requirements_count > 0:
+        urgency_phrase = (
+            "The deadline has passed" if is_overdue else "The deadline is approaching"
+        )
+        return (
+            f"Next step: prioritize this opportunity. {urgency_phrase} and work "
+            "is still incomplete."
+        )
+
+    if missing_requirements_count > 0:
+        noun = "requirement" if missing_requirements_count == 1 else "requirements"
+        return f"Next step: complete {missing_requirements_count} remaining {noun}."
+
+    if linked_material_count == 0:
+        return "Next step: link a relevant material from the Materials Vault."
+
+    return "Next step: review the packet, submit the application, or update the status."
+
+
 @blueprint.route("/new/", methods=["GET", "POST"])
 @login_required
 def new():
@@ -143,6 +269,7 @@ def new():
 @login_required
 def detail(opportunity_id):
     """Show full opportunity details."""
+    today = dt.date.today()
     opportunity = _get_owned_opportunity_or_404(opportunity_id)
     linked_materials = sorted(
         opportunity.materials,
@@ -161,22 +288,49 @@ def detail(opportunity_id):
     completed_requirements = sum(
         1 for requirement in requirement_items if requirement.is_completed
     )
+    missing_requirements_count = len(incomplete_requirements)
+    linked_material_count = len(linked_materials)
     completion_percent = (
         round((completed_requirements / total_requirements) * 100)
         if total_requirements
         else 0
     )
-    if incomplete_requirements:
-        count = len(incomplete_requirements)
-        noun = "requirement" if count == 1 else "requirements"
-        next_step_message = f"Next step: complete {count} remaining {noun}."
-    elif not linked_materials:
-        next_step_message = (
-            "Next step: link a saved material to support this application."
+    deadline_context = _deadline_packet_context(opportunity.deadline, today)
+    readiness_status = _readiness_status(
+        total_requirements=total_requirements,
+        missing_requirements_count=missing_requirements_count,
+        linked_material_count=linked_material_count,
+        is_due_soon=deadline_context["is_due_soon"],
+        is_overdue=deadline_context["is_overdue"],
+    )
+    next_step_message = _next_step_message(
+        total_requirements=total_requirements,
+        missing_requirements_count=missing_requirements_count,
+        linked_material_count=linked_material_count,
+        is_due_soon=deadline_context["is_due_soon"],
+        is_overdue=deadline_context["is_overdue"],
+    )
+
+    if total_requirements == 0:
+        missing_requirements_summary = "No checklist items yet."
+    elif missing_requirements_count:
+        noun = "requirement" if missing_requirements_count == 1 else "requirements"
+        verb = "needs" if missing_requirements_count == 1 else "need"
+        missing_requirements_summary = (
+            f"{missing_requirements_count} {noun} still {verb} attention."
         )
     else:
-        next_step_message = (
-            "Next step: review linked materials and confirm the application is ready."
+        missing_requirements_summary = "All checklist items are complete."
+
+    if linked_material_count == 0:
+        linked_materials_summary = (
+            "No materials linked yet. Add a resume, essay, cover letter, or note "
+            "from the Materials Vault."
+        )
+    else:
+        noun = "material" if linked_material_count == 1 else "materials"
+        linked_materials_summary = (
+            f"{linked_material_count} linked {noun} connected to this application."
         )
 
     return render_template(
@@ -187,8 +341,14 @@ def detail(opportunity_id):
         incomplete_requirements=incomplete_requirements,
         total_requirements=total_requirements,
         completed_requirements=completed_requirements,
+        missing_requirements_count=missing_requirements_count,
+        linked_material_count=linked_material_count,
         completion_percent=completion_percent,
+        missing_requirements_summary=missing_requirements_summary,
+        linked_materials_summary=linked_materials_summary,
         next_step_message=next_step_message,
+        **deadline_context,
+        **readiness_status,
     )
 
 

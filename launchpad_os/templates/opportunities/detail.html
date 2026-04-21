@@ -18,6 +18,77 @@
       </div>
     </div>
 
+    <div class="app-card detail-card packet-card mb-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+        <div>
+          <p class="eyebrow text-primary mb-2">Application Packet</p>
+          <h2 class="h4 fw-semibold mb-2">Readiness summary</h2>
+          <p class="text-muted mb-0">See how complete this application is, what is missing, and what to do next.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge app-badge packet-status-badge packet-status-{{ readiness_class }}">{{ readiness_label }}</span>
+          <span class="badge app-badge packet-status-badge deadline-status-{{ deadline_urgency_class }}">{{ deadline_urgency_label }}</span>
+        </div>
+      </div>
+
+      <div class="packet-layout">
+        <div>
+          <div class="packet-progress-summary">
+            <div class="packet-readiness-value">{{ completion_percent }}%</div>
+            <div>
+              <p class="detail-label mb-1">Checklist readiness</p>
+              <p class="fw-semibold mb-0">{{ completed_requirements }} of {{ total_requirements }} requirements complete</p>
+            </div>
+          </div>
+          <div class="progress checklist-progress mb-4" role="progressbar" aria-label="Application readiness" aria-valuenow="{{ completion_percent }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" style="width: {{ completion_percent }}%"></div>
+          </div>
+
+          <div class="readiness-summary mb-0">
+            <p class="detail-label mb-2">Next recommended action</p>
+            <p class="fw-semibold mb-2">{{ next_step_message }}</p>
+            <p class="text-muted mb-2">{{ missing_requirements_summary }}</p>
+            {% if incomplete_requirements %}
+            <ul class="readiness-missing-list mb-0">
+              {% for requirement in incomplete_requirements[:3] %}
+              <li>{{ requirement.title }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="packet-metrics-grid">
+          <div class="packet-metric">
+            <p class="packet-metric-label">Missing requirements</p>
+            <p class="packet-metric-value">{{ missing_requirements_count }}</p>
+            <p class="packet-metric-text mb-0">{{ missing_requirements_summary }}</p>
+          </div>
+          <div class="packet-metric">
+            <p class="packet-metric-label">Linked materials</p>
+            <p class="packet-metric-value">{{ linked_material_count }}</p>
+            <p class="packet-metric-text mb-0">{{ linked_materials_summary }}</p>
+          </div>
+          <div class="packet-metric">
+            <p class="packet-metric-label">Deadline urgency</p>
+            <p class="packet-metric-value">{{ deadline_urgency_label }}</p>
+            <p class="packet-metric-text mb-0">{{ deadline_label }}</p>
+          </div>
+          <div class="packet-metric">
+            <p class="packet-metric-label">Packet status</p>
+            <p class="packet-metric-value">{{ readiness_label }}</p>
+            <p class="packet-metric-text mb-0">
+              {% if linked_material_count %}
+              {{ linked_material_count }} linked material{% if linked_material_count != 1 %}s{% endif %} available for this application.
+              {% else %}
+              Link supporting materials from the vault when you are ready.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="app-card detail-card">
       <div class="detail-summary">
         <span class="badge app-badge app-badge-soft">{{ opportunity.category }}</span>
@@ -99,7 +170,7 @@
       </div>
 
       <div class="readiness-summary mb-4">
-        <p class="fw-semibold mb-2">{{ next_step_message }}</p>
+        <p class="fw-semibold mb-2">{{ missing_requirements_summary }}</p>
         {% if incomplete_requirements %}
         <p class="text-muted mb-2">Still needs attention:</p>
         <ul class="readiness-missing-list mb-0">
@@ -169,7 +240,7 @@
         <div>
           <p class="eyebrow text-primary mb-2">Related Materials</p>
           <h2 class="h4 fw-semibold mb-2">Linked materials</h2>
-          <p class="text-muted mb-0">Connect reusable materials from the vault to this specific application.</p>
+          <p class="text-muted mb-0">{{ linked_materials_summary }}</p>
         </div>
         <a class="btn btn-outline-primary app-action" href="{{ url_for('opportunities.link_material', opportunity_id=opportunity.id) }}">Link existing material</a>
       </div>
