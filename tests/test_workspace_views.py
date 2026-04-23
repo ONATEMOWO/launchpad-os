@@ -101,7 +101,7 @@ class TestWorkspaceViews:
         assert "Other user requirement" not in res
 
     def test_workspace_shows_due_soon_and_checklist_work(self, user, testapp, db):
-        """Dashboard includes useful attention and next-step sections."""
+        """Dashboard digest and progress grid surface due-soon and checklist data."""
         today = dt.date.today()
         opportunity = OpportunityFactory(
             user=user,
@@ -120,16 +120,13 @@ class TestWorkspaceViews:
 
         login(testapp, user)
         res = testapp.get(url_for("workspace.index"))
-        due_soon_section = res.html.select_one("#dueSoonSection")
-        checklist_section = res.html.select_one("#checklistWorkSection")
+        digest_due_soon = res.html.select_one("#digestDueSoon")
         progress_section = res.html.select_one("#activeProgressSection")
 
-        assert due_soon_section is not None
-        assert checklist_section is not None
+        assert digest_due_soon is not None
         assert progress_section is not None
-        assert "Research Fellowship" in due_soon_section.text
-        assert "Due in 10 days" in due_soon_section.text
-        assert "1 of 2 requirements complete" in checklist_section.text
+        assert "Research Fellowship" in digest_due_soon.text
+        assert "Due in 10 days" in digest_due_soon.text
         assert "1 of 2 requirements" in progress_section.text
         assert "50%" in progress_section.text
 
@@ -138,9 +135,8 @@ class TestWorkspaceViews:
         login(testapp, user)
         res = testapp.get(url_for("workspace.index"))
 
-        assert "Upcoming deadlines" in res
-        assert "Checklist work" in res
         assert "What needs attention next" in res
+        assert "Action Digest" in res
         assert "No active opportunities yet." in res
         assert "Add opportunity" in res
         assert "Open materials vault" in res

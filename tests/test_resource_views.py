@@ -2,6 +2,7 @@
 """Resource hub view tests."""
 from flask import url_for
 
+from launchpad_os.extensions import db as _db
 from launchpad_os.resources.models import ResourceSource
 
 from .factories import ResourceSourceFactory, UserFactory
@@ -76,3 +77,55 @@ class TestResourceViews:
 
         assert "Resources" in res
         assert url_for("resources.index") in res
+
+    def test_user_can_delete_personal_resource_source(self, user, testapp, db):
+        """Authenticated users can remove a personal source they own."""
+        source = ResourceSourceFactory(user=user, name="Page To Remove")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.post(
+            url_for("resources.delete", source_id=source.id),
+            params={"csrf_token": "dummy"},
+        ).follow()
+
+        assert res.status_code == 200
+        assert "Resource source removed." in res
+        assert _db.session.get(ResourceSource, source.id) is None
+
+    def test_user_cannot_delete_another_users_resource_source(self, user, testapp, db):
+        """Users cannot delete resource sources they do not own."""
+        other_user = UserFactory(password="myprecious")
+        source = ResourceSourceFactory(user=other_user, name="Other Source")
+        db.session.commit()
+        login(testapp, user)
+
+        testapp.post(
+            url_for("resources.delete", source_id=source.id),
+            params={"csrf_token": "dummy"},
+            status=404,
+        )
+        assert _db.session.get(ResourceSource, source.id) is not None
+
+    def test_capture_from_source_does_not_prefill_source_name(self, user, testapp, db):
+        """Capture from source passes only the URL, not the source name as title."""
+        source = ResourceSourceFactory(
+            user=user,
+            name="My Research Page",
+            url="https://example.edu/research",
+            notes="Check this every semester.",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("resources.index"))
+
+        capture_url = url_for("opportunities.capture", link=source.url)
+        assert capture_url in res
+        bad_url = url_for(
+            "opportunities.capture",
+            title=source.name,
+            link=source.url,
+            details=source.notes,
+        )
+        assert bad_url not in res

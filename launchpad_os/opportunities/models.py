@@ -8,6 +8,7 @@ CATEGORY_CHOICES = [
     ("internship", "Internship"),
     ("scholarship", "Scholarship"),
     ("research", "Research"),
+    ("fellowship", "Fellowship"),
 ]
 
 STATUS_CHOICES = [

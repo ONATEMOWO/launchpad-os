@@ -32,6 +32,13 @@ CHECKLIST_TEMPLATES = {
         "List relevant coursework or experience",
         "Identify recommendation/reference if needed",
     ],
+    "fellowship": [
+        "Draft personal statement or essay",
+        "Research program requirements and eligibility",
+        "Request letters of recommendation",
+        "Prepare transcript and academic record",
+        "Submit application before deadline",
+    ],
 }
 
 

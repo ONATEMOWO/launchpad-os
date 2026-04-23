@@ -745,6 +745,7 @@ class TestOpportunityViews:
 
         assert res.status_code == 200
         assert "Opportunity updated." in res
+        assert "Opportunity Details" in res
         assert opportunity.title == "Updated Internship"
         assert opportunity.organization == "Updated Org"
         assert opportunity.status == "accepted"

@@ -3,7 +3,7 @@
 import json
 from urllib import error, request
 
-VALID_CATEGORIES = {"internship", "scholarship", "research"}
+VALID_CATEGORIES = {"internship", "scholarship", "research", "fellowship"}
 MAX_CHECKLIST_ITEMS = 6
 MAX_TAGS = 5
 

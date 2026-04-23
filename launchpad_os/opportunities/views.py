@@ -921,7 +921,7 @@ def edit(opportunity_id):
         _save_tags(opportunity, form.tags.data)
         _save_outreach(opportunity, form)
         flash("Opportunity updated.", "success")
-        return redirect(url_for("opportunities.index"))
+        return redirect(url_for("opportunities.detail", opportunity_id=opportunity.id))
     if form.errors:
         flash_errors(form)
     return render_template(

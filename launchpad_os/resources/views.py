@@ -79,6 +79,18 @@ def _group_curated_sources():
     return grouped_sources
 
 
+@blueprint.route("/<int:source_id>/delete/", methods=["POST"])
+@login_required
+def delete(source_id):
+    """Delete a personal resource source owned by the current user."""
+    source = ResourceSource.query.filter_by(
+        id=source_id, user_id=current_user.id
+    ).first_or_404()
+    source.delete()
+    flash("Resource source removed.", "info")
+    return redirect(url_for("resources.index"))
+
+
 @blueprint.route("/", methods=["GET", "POST"])
 @login_required
 def index():
