@@ -5,7 +5,11 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from launchpad_os.database import db
 from launchpad_os.materials.models import Material
-from launchpad_os.opportunities.models import Opportunity, OpportunityOutreach
+from launchpad_os.opportunities.models import (
+    Opportunity,
+    OpportunityOutreach,
+    OpportunityTag,
+)
 from launchpad_os.requirements.models import RequirementItem
 from launchpad_os.resources.models import ResourceSource
 from launchpad_os.user.models import User
@@ -80,6 +84,18 @@ class OpportunityOutreachFactory(BaseFactory):
         """Factory configuration."""
 
         model = OpportunityOutreach
+
+
+class OpportunityTagFactory(BaseFactory):
+    """Opportunity tag factory."""
+
+    user = SubFactory(UserFactory)
+    name = Sequence(lambda n: f"tag-{n}")
+
+    class Meta:
+        """Factory configuration."""
+
+        model = OpportunityTag
 
 
 class ResourceSourceFactory(BaseFactory):

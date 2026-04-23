@@ -23,3 +23,7 @@ CACHE_TYPE = (
     "flask_caching.backends.SimpleCache"  # Can be "MemcachedCache", "RedisCache", etc.
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+AI_INTAKE_ENDPOINT = env.str("AI_INTAKE_ENDPOINT", default="")
+AI_INTAKE_API_KEY = env.str("AI_INTAKE_API_KEY", default="")
+AI_INTAKE_MODEL = env.str("AI_INTAKE_MODEL", default="")
+AI_INTAKE_TIMEOUT = env.int("AI_INTAKE_TIMEOUT", default=20)

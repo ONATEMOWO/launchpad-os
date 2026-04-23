@@ -74,6 +74,8 @@ def _build_opportunity_progress(opportunities, today):
                 "completed_requirements": completed_requirements,
                 "completion_percent": completion_percent,
                 "needs_requirements": needs_requirements,
+                "missing_checklist": total_requirements == 0,
+                "missing_materials": len(opportunity.materials) == 0,
                 "outreach_status": outreach_status,
                 "follow_up_due": outreach_status == "follow-up due",
                 **deadline_context,
@@ -87,6 +89,141 @@ def _is_high_priority_low_readiness(card):
     return card["opportunity"].priority == "high" and (
         card["completion_percent"] < LOW_READINESS_THRESHOLD
     )
+
+
+def _readiness_snapshot(opportunity_cards):
+    """Return a simple readiness distribution for the dashboard."""
+    total_cards = len(opportunity_cards)
+    if not total_cards:
+        return []
+
+    ready_count = 0
+    in_progress_count = 0
+    needs_setup_count = 0
+
+    for card in opportunity_cards:
+        if card["total_requirements"] > 0 and card["completion_percent"] >= 80:
+            if not card["missing_materials"]:
+                ready_count += 1
+                continue
+        if card["missing_checklist"] or card["missing_materials"]:
+            needs_setup_count += 1
+        else:
+            in_progress_count += 1
+
+    snapshot = [
+        {
+            "label": "Ready to review",
+            "count": ready_count,
+            "description": "Checklist is mostly complete and materials are linked.",
+            "bar_class": "bg-success",
+        },
+        {
+            "label": "In progress",
+            "count": in_progress_count,
+            "description": "The packet is moving, but still needs work.",
+            "bar_class": "bg-primary",
+        },
+        {
+            "label": "Needs setup",
+            "count": needs_setup_count,
+            "description": "Checklist or materials still need basic setup.",
+            "bar_class": "bg-warning",
+        },
+    ]
+    for item in snapshot:
+        item["width"] = round((item["count"] / total_cards) * 100) if total_cards else 0
+    return snapshot
+
+
+def _hero_priorities(opportunity_cards):
+    """Return a short, high-signal list of priorities for the dashboard hero."""
+    priority_items = []
+    seen_ids = set()
+    for card in opportunity_cards:
+        opportunity = card["opportunity"]
+        if opportunity.id in seen_ids:
+            continue
+
+        remaining_requirements = (
+            card["total_requirements"] - card["completed_requirements"]
+        )
+        if card["is_overdue"]:
+            priority_items.append(
+                {
+                    "opportunity": opportunity,
+                    "label": "Overdue",
+                    "note": card["deadline_label"],
+                    "action_label": "Review now",
+                    "rank": 0,
+                    "days_until_deadline": card["days_until_deadline"] or -999,
+                }
+            )
+        elif card["is_due_soon"] and remaining_requirements > 0:
+            priority_items.append(
+                {
+                    "opportunity": opportunity,
+                    "label": "Due soon",
+                    "note": (
+                        f"{card['deadline_label']} and "
+                        f"{remaining_requirements} requirement"
+                        f"{'' if remaining_requirements == 1 else 's'} still open"
+                    ),
+                    "action_label": "Finish checklist",
+                    "rank": 1,
+                    "days_until_deadline": card["days_until_deadline"] or 999,
+                }
+            )
+        elif card["follow_up_due"]:
+            priority_items.append(
+                {
+                    "opportunity": opportunity,
+                    "label": "Follow-up due",
+                    "note": "Outreach is waiting on the next response.",
+                    "action_label": "Open outreach",
+                    "rank": 2,
+                    "days_until_deadline": card["days_until_deadline"] or 999,
+                }
+            )
+        elif _is_high_priority_low_readiness(card):
+            priority_items.append(
+                {
+                    "opportunity": opportunity,
+                    "label": "Low readiness",
+                    "note": f"{card['completion_percent']}% ready for a high-priority packet.",
+                    "action_label": "Build packet",
+                    "rank": 3,
+                    "days_until_deadline": card["days_until_deadline"] or 999,
+                }
+            )
+        elif card["missing_checklist"]:
+            priority_items.append(
+                {
+                    "opportunity": opportunity,
+                    "label": "No checklist",
+                    "note": "Generate starter requirements to avoid a blank packet.",
+                    "action_label": "Set up checklist",
+                    "rank": 4,
+                    "days_until_deadline": card["days_until_deadline"] or 999,
+                }
+            )
+        elif card["missing_materials"]:
+            priority_items.append(
+                {
+                    "opportunity": opportunity,
+                    "label": "No materials linked",
+                    "note": "Link a resume, essay, or notes from the vault.",
+                    "action_label": "Link material",
+                    "rank": 5,
+                    "days_until_deadline": card["days_until_deadline"] or 999,
+                }
+            )
+        else:
+            continue
+        seen_ids.add(opportunity.id)
+
+    priority_items.sort(key=lambda item: (item["rank"], item["days_until_deadline"]))
+    return priority_items[:4]
 
 
 @blueprint.route("/")
@@ -127,6 +264,14 @@ def index():
     follow_up_due_opportunities = [
         card for card in opportunity_cards if card["follow_up_due"]
     ]
+    missing_checklist_opportunities = [
+        card for card in opportunity_cards if card["missing_checklist"]
+    ]
+    missing_material_opportunities = [
+        card for card in opportunity_cards if card["missing_materials"]
+    ]
+    readiness_snapshot = _readiness_snapshot(opportunity_cards)
+    hero_priorities = _hero_priorities(opportunity_cards)
 
     return render_template(
         "workspace/index.html",
@@ -136,9 +281,20 @@ def index():
         incomplete_opportunities_count=len(incomplete_opportunities),
         opportunity_cards=opportunity_cards,
         due_soon_opportunities=due_soon_opportunities[:5],
+        due_soon_opportunities_count=len(due_soon_opportunities),
         incomplete_opportunities=incomplete_opportunities[:5],
         overdue_opportunities=overdue_opportunities[:5],
+        overdue_opportunities_count=len(overdue_opportunities),
         due_soon_upcoming=due_soon_upcoming[:5],
+        due_soon_upcoming_count=len(due_soon_upcoming),
         high_priority_low_readiness=high_priority_low_readiness[:5],
+        high_priority_low_readiness_count=len(high_priority_low_readiness),
         follow_up_due_opportunities=follow_up_due_opportunities[:5],
+        follow_up_due_opportunities_count=len(follow_up_due_opportunities),
+        missing_checklist_opportunities=missing_checklist_opportunities[:5],
+        missing_checklist_opportunities_count=len(missing_checklist_opportunities),
+        missing_material_opportunities=missing_material_opportunities[:5],
+        missing_material_opportunities_count=len(missing_material_opportunities),
+        readiness_snapshot=readiness_snapshot,
+        hero_priorities=hero_priorities,
     )

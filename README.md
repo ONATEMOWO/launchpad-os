@@ -12,10 +12,15 @@ LaunchPad OS was developed as a senior seminar project focused on practical stud
 - Authenticated workspace dashboard with readiness and attention views
 - Opportunity tracking with statuses, deadlines, archive/restore, and search/filter
 - Quick Capture intake flow for saving rough opportunity information before refining it
+- Optional AI-assisted Quick Capture suggestions with deterministic fallback
+- Browser-clipper-ready capture flow and a lightweight extension prototype
 - Requirement checklists tied to each opportunity
 - Guided checklist templates for internships, scholarships, and research opportunities
 - Materials Vault for resumes, essays, notes, recommendation notes, and related drafts
 - Opportunity-to-material linking
+- Opportunity outreach tracking and in-app action digest panels
+- Resource Hub for curated discovery sources and personal source links
+- Opportunity tags and smart views for scaling to larger application sets
 - Application Packet / Readiness summary on opportunity detail pages
 - CSV export for user-owned opportunities and materials
 
@@ -69,6 +74,15 @@ This repo includes a development `.env` file with defaults such as:
 - `FLASK_APP=autoapp.py`
 - `FLASK_ENV=development`
 - `DATABASE_URL=sqlite:////tmp/dev.db`
+
+Optional AI-assisted intake can be configured with additional environment variables:
+
+- `AI_INTAKE_ENDPOINT`
+- `AI_INTAKE_API_KEY`
+- `AI_INTAKE_MODEL`
+- `AI_INTAKE_TIMEOUT`
+
+If those values are not provided, LaunchPad OS automatically falls back to the normal Quick Capture review flow.
 
 ### 6. Initialize the local database
 
@@ -146,15 +160,72 @@ PATH=.venv/bin:$PATH npm run build
 
 If you only change Python files, templates, or docs, an asset rebuild is usually not needed.
 
+## Optional AI-Assisted Intake
+
+LaunchPad OS can optionally call an AI endpoint during Quick Capture to suggest:
+
+- title
+- organization
+- category
+- recognizable deadline text
+- short summary
+- starter checklist items
+
+The user still reviews the prefilled form before saving. If AI is unavailable, unconfigured, or returns an error, the app keeps the normal deterministic Quick Capture behavior.
+
+The implementation uses a configurable OpenAI-compatible chat-completions style endpoint and does not make the rest of the app depend on AI being available.
+
+## Browser Clipper Prototype
+
+The repository includes a lightweight browser clipper prototype in:
+
+- `browser_extension/README.md`
+
+The actual extension files live in `browser_extension/` and open LaunchPad OS Quick Capture with:
+
+- page title
+- page URL
+- selected text when available
+
+Quick Capture can also be prefilled directly with query parameters, for example:
+
+```text
+/opportunities/capture/?source=clipper&title=Example&url=https://example.com&selected_text=Important%20details
+```
+
+## Reminder / Digest Behavior
+
+LaunchPad OS currently provides reminder support as an in-app action digest on the workspace dashboard. It highlights:
+
+- overdue opportunities
+- due soon opportunities
+- high-priority low-readiness opportunities
+- follow-up due opportunities
+- opportunities missing checklist items
+- opportunities missing linked materials
+
+Email sending is not implemented in this repository. The current reminder path is intentionally in-app and demo-friendly.
+
+## Scaling Support
+
+For larger sets of opportunities, LaunchPad OS now supports:
+
+- custom opportunity tags
+- tag filtering
+- smart views for urgent work, follow-up due, low readiness, missing materials, and missing checklist items
+
 ## Recommended Evaluation Flow
 
 1. Create a user account or sign in.
-2. Add an opportunity or use Quick Capture.
-3. Open the opportunity detail page.
-4. Add or generate checklist items.
-5. Add materials and link them to the opportunity.
-6. Review the workspace dashboard.
-7. Export opportunities or materials as CSV from the list pages.
+2. Open the Resource Hub and try a capture-from-source shortcut.
+3. Use Quick Capture with rough notes or a link.
+4. Optionally test AI-assisted Quick Capture if configured.
+5. Open the opportunity detail page.
+6. Add or generate checklist items.
+7. Add outreach details and linked materials.
+8. Add tags and test smart views on the opportunities page.
+9. Review the workspace dashboard and action digest.
+10. Export opportunities or materials as CSV from the list pages.
 
 ## CSV Export
 
@@ -177,6 +248,7 @@ Exports are scoped to the current authenticated user and do not include another 
 
 Additional project notes:
 
+- [Assistive features](docs/assistive_features.md)
 - [Local setup](docs/local_setup.md)
 - [Testing notes](docs/testing.md)
 - [Acknowledgements](docs/acknowledgements.md)
@@ -192,6 +264,8 @@ Add final screenshots to `docs/screenshots/` before submission. Suggested captur
 - Opportunity detail / Application Packet
 - Materials Vault
 - Quick Capture flow
+- Resource Hub
+- Action digest and smart views
 
 ## AI / Open-Source Acknowledgement
 

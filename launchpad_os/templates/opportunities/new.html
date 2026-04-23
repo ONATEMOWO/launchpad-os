@@ -18,13 +18,85 @@
         </div>
 
         <div class="app-card form-card">
+          <form id="opportunityForm" method="POST" action="{{ form_action|default('') }}" role="form">
+            {{ form.csrf_token }}
           {% if review_notice %}
           <div class="alert alert-info app-alert mb-4" role="status">
             {{ review_notice }}
           </div>
           {% endif %}
-          <form id="opportunityForm" method="POST" action="{{ form_action|default('') }}" role="form">
-            {{ form.csrf_token }}
+          {% if assistance_notice %}
+          <div class="alert alert-secondary app-alert mb-4" role="status">
+            {{ assistance_notice }}
+          </div>
+          {% endif %}
+          {% if suggested_title or suggested_organization or suggested_category_label or capture_summary or suggested_checklist or suggested_deadline_text or suggested_tags %}
+          <div class="app-card assist-review-card mb-4">
+            <div class="form-card-section">
+              <p class="eyebrow text-primary mb-2">AI suggestions</p>
+              <h2 class="h5 fw-semibold mb-1">Review the suggested packet details</h2>
+              <p class="text-muted mb-0">These suggestions are already prefilled in the form below. Adjust anything you want before saving.</p>
+            </div>
+            <div class="row g-4">
+              {% if suggested_title %}
+              <div class="col-md-6">
+                <p class="detail-label mb-2">Suggested title</p>
+                <p class="mb-0">{{ suggested_title }}</p>
+              </div>
+              {% endif %}
+              {% if suggested_organization %}
+              <div class="col-md-6">
+                <p class="detail-label mb-2">Suggested organization</p>
+                <p class="mb-0">{{ suggested_organization }}</p>
+              </div>
+              {% endif %}
+              {% if suggested_category_label %}
+              <div class="col-md-6">
+                <p class="detail-label mb-2">Suggested category</p>
+                <p class="mb-0">{{ suggested_category_label }}</p>
+              </div>
+              {% endif %}
+              {% if capture_summary %}
+              <div class="col-12">
+                <p class="detail-label mb-2">Suggested summary</p>
+                <p class="mb-0">{{ capture_summary }}</p>
+              </div>
+              {% endif %}
+              {% if suggested_deadline_text %}
+              <div class="col-md-6">
+                <p class="detail-label mb-2">Suggested deadline text</p>
+                <p class="mb-0">{{ suggested_deadline_text }}</p>
+              </div>
+              {% endif %}
+              {% if suggested_tags %}
+              <div class="col-12">
+                <p class="detail-label mb-2">Suggested tags</p>
+                <div class="d-flex flex-wrap gap-2">
+                  {% for tag in suggested_tags %}
+                  <span class="badge app-badge app-badge-soft">#{{ tag }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              {% if suggested_checklist %}
+              <div class="col-12">
+                <p class="detail-label mb-2">Suggested checklist items</p>
+                <ul class="readiness-missing-list mb-3">
+                  {% for item in suggested_checklist %}
+                  <li>{{ item }}</li>
+                  {% endfor %}
+                </ul>
+                <div class="form-check">
+                  {{ form.create_suggested_checklist(class_="form-check-input") }}
+                  {{ form.create_suggested_checklist.label(class_="form-check-label fw-semibold") }}
+                </div>
+                {{ form.suggested_checklist_items(value=form.suggested_checklist_items.data or '[]') }}
+                <small class="form-text text-muted">If selected, the suggested checklist items will be created after the opportunity is saved.</small>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
             <div class="form-card-section">
               <h2 class="h5 fw-semibold mb-1">Opportunity details</h2>
               <p class="text-muted mb-0">Capture the name, organization, and current application state.</p>
@@ -49,6 +121,11 @@
               <div class="col-md-4">
                 {{ form.priority.label(class_="form-label") }}
                 {{ form.priority(class_="form-select") }}
+              </div>
+              <div class="col-12">
+                {{ form.tags.label(class_="form-label") }}
+                {{ form.tags(placeholder="research, faculty outreach, summer 2026", class_="form-control") }}
+                <small class="form-text text-muted">Use comma-separated tags to organize larger sets of applications.</small>
               </div>
             </div>
 

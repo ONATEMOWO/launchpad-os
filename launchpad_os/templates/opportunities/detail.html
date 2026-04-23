@@ -100,6 +100,14 @@
         <span class="badge app-badge priority-{{ opportunity.priority }}">{{ opportunity.priority }}</span>
       </div>
 
+      {% if opportunity.tags %}
+      <div class="detail-summary detail-tag-summary">
+        {% for tag in opportunity.tags %}
+        <span class="badge app-badge app-badge-soft">#{{ tag.name }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <div class="detail-grid">
         <div>
           <p class="detail-label">Organization</p>

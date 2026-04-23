@@ -53,6 +53,22 @@ opportunity_materials = db.Table(
     ),
 )
 
+opportunity_tags = db.Table(
+    "opportunity_tags",
+    Column(
+        "opportunity_id",
+        db.Integer,
+        db.ForeignKey("opportunities.id"),
+        primary_key=True,
+    ),
+    Column(
+        "tag_id",
+        db.Integer,
+        db.ForeignKey("opportunity_tag_lookup.id"),
+        primary_key=True,
+    ),
+)
+
 
 def utc_now():
     """Return the current timezone-aware UTC datetime."""
@@ -76,6 +92,12 @@ class Opportunity(PkModel):
     materials = relationship(
         "Material", secondary=opportunity_materials, backref="opportunities"
     )
+    tags = relationship(
+        "OpportunityTag",
+        secondary=opportunity_tags,
+        backref="opportunities",
+        order_by="OpportunityTag.name.asc()",
+    )
     created_at = Column(db.DateTime, nullable=False, default=utc_now)
     updated_at = Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
@@ -87,6 +109,30 @@ class Opportunity(PkModel):
     def status_label(self):
         """Human-readable status label for templates."""
         return STATUS_LABELS.get(self.status, self.status.title())
+
+    @property
+    def tag_names(self):
+        """Sorted tag names for templates."""
+        return [tag.name for tag in self.tags]
+
+
+class OpportunityTag(PkModel):
+    """User-defined tag for organizing many opportunities."""
+
+    __tablename__ = "opportunity_tag_lookup"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "name", name="uq_opportunity_tag_user_name"),
+    )
+
+    name = Column(db.String(50), nullable=False)
+    user_id = reference_col("users", nullable=False)
+    user = relationship("User", backref="opportunity_tags")
+    created_at = Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    def __repr__(self):
+        """Represent instance as a unique string."""
+        return f"<OpportunityTag({self.name!r})>"
 
 
 class OpportunityOutreach(PkModel):

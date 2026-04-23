@@ -32,6 +32,7 @@ class TestResourceViews:
         assert "Discover opportunity sources" in res
         assert "Handshake" in res
         assert "NSF REU" in res
+        assert "Capture from source" in res
 
     def test_user_can_save_personal_resource_source(self, user, testapp):
         """Authenticated users can save a personal source link."""

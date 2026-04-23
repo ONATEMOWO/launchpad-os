@@ -3,85 +3,161 @@
 {% block page_title %}Workspace | LaunchPad OS{% endblock %}
 {% block meta_description %}Review active applications, deadlines, materials, and requirement progress in LaunchPad OS.{% endblock %}
 
+{% block body_class %}workspace-dashboard-page{% endblock %}
+
 {% block content %}
 <section class="app-section" id="workspace-dashboard">
-  <div class="container app-container">
-    <div class="app-card workspace-hero mb-4">
-      <div class="row g-4 align-items-start">
-        <div class="col-lg-7">
-          <p class="eyebrow text-primary mb-2">Application Workspace</p>
-          <h1 class="fw-semibold mb-2">Welcome back, {{ current_user.username }}.</h1>
-          <p class="text-muted mb-4">Review deadlines, check what is missing, and move the next application packet forward without bouncing between tools.</p>
-          <div class="d-flex flex-wrap gap-2">
-            <span class="badge app-badge app-badge-soft">{{ active_opportunities_count }} active</span>
-            <span class="badge app-badge status-badge">{{ incomplete_opportunities_count }} need follow-up</span>
-            <span class="badge app-badge app-badge-soft">{{ materials_count }} materials ready</span>
+  <div class="container app-container app-container-wide workspace-container">
+    <div class="workspace-top-shell mb-4">
+      <div class="workspace-focus-column">
+        <div class="app-card workspace-hero">
+          <div class="workspace-hero-copy">
+            <p class="eyebrow text-primary mb-2">Application Workspace</p>
+            <h1 class="fw-semibold mb-2">Welcome back, {{ current_user.username }}.</h1>
+            <p class="text-muted mb-0">See what deserves attention this week, where readiness is slipping, and which packet should move next.</p>
+          </div>
+
+          <div class="workspace-priorities-panel mt-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-3">
+              <div>
+                <p class="detail-label mb-1">This week priorities</p>
+                <p class="text-muted mb-0">The shortest list to review first.</p>
+              </div>
+              <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.index') }}">Review all</a>
+            </div>
+            {% if hero_priorities %}
+            <div class="workspace-priority-list">
+              {% for item in hero_priorities %}
+              <a class="workspace-priority-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span class="workspace-priority-copy">
+                  <span class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <span class="badge app-badge status-badge">{{ item.label }}</span>
+                    <span class="fw-semibold">{{ item.opportunity.title }}</span>
+                  </span>
+                  <span class="text-muted d-block">{{ item.note }}</span>
+                </span>
+                <span class="workspace-priority-action text-primary fw-semibold">{{ item.action_label }}</span>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="workspace-empty p-3">
+              <p class="fw-semibold mb-1">No urgent priorities right now.</p>
+              <p class="text-muted mb-0">Add opportunities with deadlines, checklists, and linked materials so the workspace can guide your next move.</p>
+            </div>
+            {% endif %}
           </div>
         </div>
-        <div class="col-lg-5">
-          <div class="workspace-quick-actions">
-            <p class="detail-label mb-3">Quick actions</p>
+
+        <div class="app-card workspace-summary-card workspace-summary-card-wide">
+          <div class="workspace-panel-header mb-3">
+            <div>
+              <p class="detail-label mb-1">Readiness snapshot</p>
+              <p class="text-muted mb-0">A quick scan of where active applications stand.</p>
+            </div>
+          </div>
+          {% if readiness_snapshot %}
+          <div class="workspace-insight-layout">
+            <div class="workspace-insight-stack">
+              {% for item in readiness_snapshot %}
+              <div class="workspace-insight-row">
+                <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                  <span class="fw-semibold">{{ item.label }}</span>
+                  <span class="text-muted">{{ item.count }}</span>
+                </div>
+                <div class="progress workspace-insight-progress" role="progressbar" aria-label="{{ item.label }}" aria-valuenow="{{ item.width }}" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar {{ item.bar_class }}" style="width: {{ item.width }}%"></div>
+                </div>
+                <p class="text-muted mb-0">{{ item.description }}</p>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="workspace-summary-mini-grid">
+              <div class="workspace-mini-stat">
+                <span class="workspace-mini-stat-value">{{ follow_up_due_opportunities_count }}</span>
+                <span class="text-muted">follow-up due</span>
+              </div>
+              <div class="workspace-mini-stat">
+                <span class="workspace-mini-stat-value">{{ missing_checklist_opportunities_count }}</span>
+                <span class="text-muted">missing checklist</span>
+              </div>
+              <div class="workspace-mini-stat">
+                <span class="workspace-mini-stat-value">{{ missing_material_opportunities_count }}</span>
+                <span class="text-muted">missing materials</span>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="workspace-empty p-3">
+            <p class="fw-semibold mb-1">No readiness data yet.</p>
+            <p class="text-muted mb-0">Once you add opportunities, the workspace will show packet readiness and missing setup work here.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="workspace-actions-column">
+        <div class="app-card workspace-quick-actions">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <p class="detail-label mb-1">Quick actions</p>
+              <p class="text-muted mb-0">Capture first, then refine the packet in one pass.</p>
+            </div>
+            <span class="badge app-badge app-badge-soft">Assistive tools</span>
+          </div>
+          <div class="workspace-action-list">
+            <a class="workspace-action-card workspace-action-card-primary" href="{{ url_for('opportunities.capture') }}">
+              <span class="workspace-action-icon"><i class="fa-solid fa-bolt"></i></span>
+              <span>
+                <span class="fw-semibold d-block">Quick capture</span>
+                <span class="text-muted">Paste a link, browser clip, or notes and review a prefilled form with optional AI suggestions.</span>
+              </span>
+            </a>
+            <a class="workspace-action-card" href="{{ url_for('opportunities.new') }}">
+              <span class="workspace-action-icon"><i class="fa-solid fa-plus"></i></span>
+              <span>
+                <span class="fw-semibold d-block">Add opportunity</span>
+                <span class="text-muted">Track a new internship, scholarship, or research role.</span>
+              </span>
+            </a>
+            <a class="workspace-action-card" href="{{ url_for('materials.new') }}">
+              <span class="workspace-action-icon"><i class="fa-solid fa-file-lines"></i></span>
+              <span>
+                <span class="fw-semibold d-block">Add material</span>
+                <span class="text-muted">Save writing, notes, or source links for reuse.</span>
+              </span>
+            </a>
             <div class="workspace-action-grid">
-              <a class="workspace-action-card" href="{{ url_for('opportunities.capture') }}">
-                <span class="workspace-action-icon"><i class="fa-solid fa-bolt"></i></span>
-                <span>
-                  <span class="fw-semibold d-block">Quick capture</span>
-                  <span class="text-muted small">Paste a link or rough notes and review a prefilled form.</span>
-                </span>
-              </a>
-              <a class="workspace-action-card" href="{{ url_for('opportunities.new') }}">
-                <span class="workspace-action-icon"><i class="fa-solid fa-plus"></i></span>
-                <span>
-                  <span class="fw-semibold d-block">Add opportunity</span>
-                  <span class="text-muted small">Track a new internship, scholarship, or research role.</span>
-                </span>
-              </a>
-              <a class="workspace-action-card" href="{{ url_for('materials.new') }}">
-                <span class="workspace-action-icon"><i class="fa-solid fa-file-lines"></i></span>
-                <span>
-                  <span class="fw-semibold d-block">Add material</span>
-                  <span class="text-muted small">Save writing, notes, or source links for reuse.</span>
-                </span>
-              </a>
               <a class="workspace-action-card" href="{{ url_for('opportunities.index') }}">
                 <span class="workspace-action-icon"><i class="fa-solid fa-briefcase"></i></span>
                 <span>
                   <span class="fw-semibold d-block">Open opportunities</span>
-                  <span class="text-muted small">Review statuses, deadlines, and archived records.</span>
+                  <span class="text-muted">Review statuses, deadlines, and archived records.</span>
                 </span>
               </a>
               <a class="workspace-action-card" href="{{ url_for('materials.index') }}">
                 <span class="workspace-action-icon"><i class="fa-solid fa-folder-open"></i></span>
                 <span>
                   <span class="fw-semibold d-block">Open materials vault</span>
-                  <span class="text-muted small">Reuse resumes, essays, recommendation notes, and drafts.</span>
+                  <span class="text-muted">Reuse resumes, essays, recommendation notes, and drafts.</span>
                 </span>
               </a>
               <a class="workspace-action-card" href="{{ url_for('resources.index') }}">
                 <span class="workspace-action-icon"><i class="fa-solid fa-compass"></i></span>
                 <span>
                   <span class="fw-semibold d-block">Open resource hub</span>
-                  <span class="text-muted small">Keep trusted discovery sources close while you plan your next applications.</span>
+                  <span class="text-muted">Keep trusted discovery sources close while you plan your next applications.</span>
                 </span>
               </a>
-              <a class="workspace-action-card" href="{{ url_for('opportunities.export') }}">
-                <span class="workspace-action-icon"><i class="fa-solid fa-file-arrow-down"></i></span>
-                <span>
-                  <span class="fw-semibold d-block">Export opportunities</span>
-                  <span class="text-muted small">Download your tracked application records as CSV.</span>
-                </span>
-              </a>
-              <a class="workspace-action-card" href="{{ url_for('materials.export') }}">
-                <span class="workspace-action-icon"><i class="fa-solid fa-file-csv"></i></span>
-                <span>
-                  <span class="fw-semibold d-block">Export materials</span>
-                  <span class="text-muted small">Download your materials vault details as CSV.</span>
-                </span>
-              </a>
+            </div>
+            <div class="workspace-quick-links pt-2">
+              <a href="{{ url_for('opportunities.export') }}">Export opportunities</a>
+              <a href="{{ url_for('materials.export') }}">Export materials</a>
             </div>
           </div>
         </div>
       </div>
+
     </div>
 
     <div class="workspace-metrics row g-3 mb-4">
@@ -140,21 +216,22 @@
         <div>
           <p class="eyebrow text-primary mb-2">Action Digest</p>
           <h2 class="h4 fw-semibold mb-1">What needs attention next</h2>
-          <p class="text-muted mb-0">Use this panel to spot overdue work, near deadlines, low-readiness priorities, and outreach follow-ups.</p>
+          <p class="text-muted mb-0">Each card isolates one kind of application risk so you can review it without scanning the full workspace.</p>
         </div>
         <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.index') }}">Review opportunity list</a>
       </div>
 
-      <div class="row g-3">
-        <div class="col-md-6 col-xl-3">
+      <div class="workspace-digest-grid">
+        <div>
           <div class="digest-card" id="digestOverdue">
             <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
               <div>
                 <p class="detail-label mb-1">Overdue</p>
                 <p class="text-muted small mb-0">Deadline already passed</p>
               </div>
-              <span class="badge app-badge status-badge">{{ overdue_opportunities|length }}</span>
+              <a class="btn btn-outline-secondary btn-sm" href="{% if overdue_opportunities %}{{ url_for('opportunities.detail', opportunity_id=overdue_opportunities[0].opportunity.id) }}{% else %}{{ url_for('opportunities.index') }}{% endif %}">Review now</a>
             </div>
+            <span class="badge app-badge status-badge mb-3">{{ overdue_opportunities_count }} item{% if overdue_opportunities_count != 1 %}s{% endif %}</span>
             {% if overdue_opportunities %}
             <div class="digest-list">
               {% for item in overdue_opportunities %}
@@ -173,15 +250,16 @@
           </div>
         </div>
 
-        <div class="col-md-6 col-xl-3">
+        <div>
           <div class="digest-card" id="digestDueSoon">
             <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
               <div>
                 <p class="detail-label mb-1">Due soon</p>
                 <p class="text-muted small mb-0">Deadlines within 30 days</p>
               </div>
-              <span class="badge app-badge status-badge">{{ due_soon_upcoming|length }}</span>
+              <a class="btn btn-outline-secondary btn-sm" href="{% if due_soon_upcoming %}{{ url_for('opportunities.detail', opportunity_id=due_soon_upcoming[0].opportunity.id) }}{% else %}{{ url_for('opportunities.index') }}{% endif %}">Review now</a>
             </div>
+            <span class="badge app-badge status-badge mb-3">{{ due_soon_upcoming_count }} item{% if due_soon_upcoming_count != 1 %}s{% endif %}</span>
             {% if due_soon_upcoming %}
             <div class="digest-list">
               {% for item in due_soon_upcoming %}
@@ -200,15 +278,16 @@
           </div>
         </div>
 
-        <div class="col-md-6 col-xl-3">
+        <div>
           <div class="digest-card" id="digestHighPriority">
             <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
               <div>
                 <p class="detail-label mb-1">High priority, low readiness</p>
                 <p class="text-muted small mb-0">High-priority applications under 50% ready</p>
               </div>
-              <span class="badge app-badge status-badge">{{ high_priority_low_readiness|length }}</span>
+              <a class="btn btn-outline-secondary btn-sm" href="{% if high_priority_low_readiness %}{{ url_for('opportunities.detail', opportunity_id=high_priority_low_readiness[0].opportunity.id) }}{% else %}{{ url_for('opportunities.index') }}{% endif %}">Review now</a>
             </div>
+            <span class="badge app-badge status-badge mb-3">{{ high_priority_low_readiness_count }} item{% if high_priority_low_readiness_count != 1 %}s{% endif %}</span>
             {% if high_priority_low_readiness %}
             <div class="digest-list">
               {% for item in high_priority_low_readiness %}
@@ -227,15 +306,16 @@
           </div>
         </div>
 
-        <div class="col-md-6 col-xl-3">
+        <div>
           <div class="digest-card" id="digestFollowUp">
             <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
               <div>
                 <p class="detail-label mb-1">Follow-up due</p>
                 <p class="text-muted small mb-0">Outreach needs a next response</p>
               </div>
-              <span class="badge app-badge status-badge">{{ follow_up_due_opportunities|length }}</span>
+              <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('opportunities.index', view='follow_up_due') }}">Review now</a>
             </div>
+            <span class="badge app-badge status-badge mb-3">{{ follow_up_due_opportunities_count }} item{% if follow_up_due_opportunities_count != 1 %}s{% endif %}</span>
             {% if follow_up_due_opportunities %}
             <div class="digest-list">
               {% for item in follow_up_due_opportunities %}
@@ -253,6 +333,62 @@
             {% endif %}
           </div>
         </div>
+
+        <div>
+          <div class="digest-card" id="digestMissingChecklist">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div>
+                <p class="detail-label mb-1">Missing checklist</p>
+                <p class="text-muted small mb-0">No requirements have been added yet</p>
+              </div>
+              <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('opportunities.index', view='missing_checklist') }}">Review now</a>
+            </div>
+            <span class="badge app-badge status-badge mb-3">{{ missing_checklist_opportunities_count }} item{% if missing_checklist_opportunities_count != 1 %}s{% endif %}</span>
+            {% if missing_checklist_opportunities %}
+            <div class="digest-list">
+              {% for item in missing_checklist_opportunities %}
+              <a class="digest-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span>
+                  <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                  <span class="text-muted small">Generate or add a starter checklist.</span>
+                </span>
+                <i class="fa-solid fa-arrow-right-long text-muted"></i>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">Every active opportunity has at least one checklist item.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <div class="digest-card" id="digestMissingMaterials">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div>
+                <p class="detail-label mb-1">Missing materials</p>
+                <p class="text-muted small mb-0">No linked resume, essay, or notes yet</p>
+              </div>
+              <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('opportunities.index', view='missing_materials') }}">Review now</a>
+            </div>
+            <span class="badge app-badge status-badge mb-3">{{ missing_material_opportunities_count }} item{% if missing_material_opportunities_count != 1 %}s{% endif %}</span>
+            {% if missing_material_opportunities %}
+            <div class="digest-list">
+              {% for item in missing_material_opportunities %}
+              <a class="digest-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span>
+                  <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                  <span class="text-muted small">Link supporting materials from the vault.</span>
+                </span>
+                <i class="fa-solid fa-arrow-right-long text-muted"></i>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">All active opportunities have at least one linked material.</p>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
 
@@ -265,7 +401,7 @@
               <h2 class="h4 fw-semibold mb-1">Upcoming deadlines</h2>
               <p class="text-muted mb-0">Deadlines within the next 30 days appear here.</p>
             </div>
-            <span class="badge app-badge app-badge-soft">{{ due_soon_opportunities|length }} tracked</span>
+            <span class="badge app-badge app-badge-soft">{{ due_soon_opportunities_count }} tracked</span>
           </div>
           {% if due_soon_opportunities %}
           <div class="workspace-list">
@@ -300,7 +436,7 @@
               <h2 class="h4 fw-semibold mb-1">Checklist work</h2>
               <p class="text-muted mb-0">Applications with missing or unfinished requirements.</p>
             </div>
-            <span class="badge app-badge app-badge-soft">{{ incomplete_opportunities|length }} open</span>
+            <span class="badge app-badge app-badge-soft">{{ incomplete_opportunities_count }} open</span>
           </div>
           {% if incomplete_opportunities %}
           <div class="workspace-list">

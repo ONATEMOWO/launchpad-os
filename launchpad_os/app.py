@@ -92,6 +92,7 @@ def register_shellcontext(app):
             "User": user.models.User,
             "Opportunity": opportunities.models.Opportunity,
             "OpportunityOutreach": opportunities.models.OpportunityOutreach,
+            "OpportunityTag": opportunities.models.OpportunityTag,
             "Material": materials.models.Material,
             "RequirementItem": requirements.models.RequirementItem,
             "ResourceSource": resources.models.ResourceSource,

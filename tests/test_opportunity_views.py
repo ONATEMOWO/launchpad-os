@@ -10,6 +10,7 @@ from .factories import (
     MaterialFactory,
     OpportunityFactory,
     OpportunityOutreachFactory,
+    OpportunityTagFactory,
     RequirementItemFactory,
     UserFactory,
 )
@@ -46,6 +47,8 @@ class TestOpportunityViews:
 
         assert res.status_code == 200
         assert "Opportunities" in res
+        assert "Smart views" in res
+        assert "Use smart views for recurring attention patterns" in res
 
     def test_logged_in_user_can_access_capture(self, user, testapp):
         """Logged-in users can open quick capture."""
@@ -55,6 +58,25 @@ class TestOpportunityViews:
         assert res.status_code == 200
         assert "Capture opportunity" in res
         assert "Quick Capture" in res
+
+    def test_capture_prefills_from_query_params(self, user, testapp):
+        """Quick Capture accepts clipper-style prefill query parameters."""
+        login(testapp, user)
+        res = testapp.get(
+            url_for(
+                "opportunities.capture",
+                source="clipper",
+                title="Research Lab Opening",
+                url="https://example.com/lab",
+                selected_text="Faculty lab opening with transcript requirement.",
+            )
+        )
+        form = res.forms["quickCaptureForm"]
+
+        assert "Browser clipper details were prefilled" in res
+        assert form["title"].value == "Research Lab Opening"
+        assert form["link"].value == "https://example.com/lab"
+        assert "transcript requirement" in form["details"].value
 
     def test_workspace_redirects_to_opportunities(self, user, testapp):
         """The old workspace page redirects to the dashboard."""
@@ -183,6 +205,79 @@ class TestOpportunityViews:
 
         assert opportunity.user == user
 
+    def test_ai_capture_falls_back_to_standard_review_when_unconfigured(
+        self, user, testapp
+    ):
+        """AI-assisted capture falls back cleanly when no provider is configured."""
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+        form = res.forms["quickCaptureForm"]
+        form["title"] = "Scholarship Packet"
+        form["details"] = "Merit scholarship with essay requirement."
+        form["use_ai"] = True
+
+        review = form.submit()
+
+        assert review.status_code == 200
+        assert (
+            "AI suggestions are not configured in this environment yet, "
+            "so LaunchPad OS used the standard Quick Capture prefill." in review
+        )
+        assert "Review captured opportunity" in review
+
+    def test_ai_capture_can_create_suggested_checklist(
+        self, user, testapp, monkeypatch
+    ):
+        """AI-assisted capture can prefill the review form and seed checklist items."""
+
+        def fake_ai_suggestions(app, capture_text):
+            return {
+                "used_ai": True,
+                "title": "AI Suggested Fellowship",
+                "organization": "Campus Innovation Office",
+                "category": "research",
+                "deadline_text": "2026-06-10",
+                "summary": "Research fellowship focused on student innovation work.",
+                "checklist_items": ["Update resume", "Draft personal statement"],
+                "tags": ["innovation", "summer 2026"],
+                "reason": "AI suggestions are ready to review before you save.",
+            }
+
+        monkeypatch.setattr(
+            "launchpad_os.opportunities.views.request_ai_capture_suggestions",
+            fake_ai_suggestions,
+        )
+
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.capture"))
+        form = res.forms["quickCaptureForm"]
+        form["details"] = "Rough fellowship note."
+        form["use_ai"] = True
+
+        review = form.submit()
+
+        assert "AI Suggested Fellowship" in review
+        assert "AI suggestions" in review
+        assert "Suggested organization" in review
+        assert "Suggested category" in review
+        assert "Research fellowship focused on student innovation work." in review
+        assert "Update resume" in review
+        assert "#innovation" in review
+
+        save_form = review.forms["opportunityForm"]
+        assert save_form["tags"].value == "innovation, summer 2026"
+        save_form["create_suggested_checklist"] = True
+        save_form.submit().follow()
+
+        opportunity = Opportunity.query.filter_by(title="AI Suggested Fellowship").one()
+
+        assert opportunity.organization == "Campus Innovation Office"
+        assert opportunity.category == "research"
+        assert {item.title for item in opportunity.requirement_items} == {
+            "Update resume",
+            "Draft personal statement",
+        }
+
     def test_user_only_sees_own_opportunities(self, user, testapp, db):
         """Users only see opportunities connected to their account."""
         other_user = UserFactory(password="myprecious")
@@ -272,6 +367,49 @@ class TestOpportunityViews:
         res = testapp.get(url_for("opportunities.index", priority="high"))
 
         assert matching.title in res
+        assert other.title not in res
+
+    def test_filter_opportunities_by_tag(self, user, testapp, db):
+        """Users can filter opportunities by custom tag."""
+        tag = OpportunityTagFactory(user=user, name="summer 2026")
+        matching = OpportunityFactory(user=user, title="Tagged Fellowship")
+        other = OpportunityFactory(user=user, title="Untagged Fellowship")
+        matching.tags.append(tag)
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", tag="summer 2026"))
+
+        assert matching.title in res
+        assert other.title not in res
+
+    def test_smart_view_missing_materials_filters_results(self, user, testapp, db):
+        """Smart views can isolate opportunities missing linked materials."""
+        missing_materials = OpportunityFactory(user=user, title="Needs Materials")
+        ready = OpportunityFactory(user=user, title="Has Materials")
+        ready.materials.append(MaterialFactory(user=user, title="Resume"))
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", view="missing_materials"))
+
+        assert missing_materials.title in res
+        assert ready.title not in res
+
+    def test_smart_view_follow_up_due_filters_results(self, user, testapp, db):
+        """Smart views can isolate opportunities with outreach follow-up due."""
+        follow_up = OpportunityFactory(user=user, title="Needs Follow-up")
+        OpportunityOutreachFactory(
+            opportunity=follow_up,
+            outreach_status="follow-up due",
+        )
+        other = OpportunityFactory(user=user, title="No Follow-up")
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("opportunities.index", view="follow_up_due"))
+
+        assert follow_up.title in res
         assert other.title not in res
 
     def test_filtered_opportunities_remain_user_scoped(self, user, testapp, db):
@@ -598,6 +736,7 @@ class TestOpportunityViews:
         form["deadline"] = "2026-06-01"
         form["status"] = "accepted"
         form["priority"] = "high"
+        form["tags"] = "summer 2026, accepted"
         form["link"] = "https://example.com/updated"
         form["notes"] = "Accepted after interview."
 
@@ -610,6 +749,7 @@ class TestOpportunityViews:
         assert opportunity.organization == "Updated Org"
         assert opportunity.status == "accepted"
         assert opportunity.priority == "high"
+        assert opportunity.tag_names == ["accepted", "summer 2026"]
 
     def test_owner_can_save_outreach_details(self, user, testapp, db):
         """Owners can save outreach details from the opportunity edit form."""

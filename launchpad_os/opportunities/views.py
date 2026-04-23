@@ -1,13 +1,24 @@
 # -*- coding: utf-8 -*-
 """Opportunity views."""
 import datetime as dt
+import json
 import re
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload, selectinload
 
 from launchpad_os.materials.models import Material
+from launchpad_os.opportunities.assist import request_ai_capture_suggestions
 from launchpad_os.opportunities.forms import (
     MaterialLinkForm,
     OpportunityCaptureForm,
@@ -19,6 +30,7 @@ from launchpad_os.opportunities.models import (
     STATUS_CHOICES,
     Opportunity,
     OpportunityOutreach,
+    OpportunityTag,
 )
 from launchpad_os.requirements.models import RequirementItem
 from launchpad_os.utils import csv_response, flash_errors
@@ -28,58 +40,267 @@ blueprint = Blueprint(
 )
 
 DEADLINE_APPROACHING_DAYS = 30
+URGENT_THIS_WEEK_DAYS = 7
 URL_PATTERN = re.compile(r"https?://[^\s]+")
+SMART_VIEW_CHOICES = [
+    ("urgent", "Urgent this week"),
+    ("follow_up_due", "Follow-up due"),
+    ("low_readiness", "Low readiness"),
+    ("missing_materials", "Missing materials"),
+    ("missing_checklist", "Missing checklist"),
+]
+CATEGORY_LABELS = dict(CATEGORY_CHOICES)
 
 
-@blueprint.route("/")
-@login_required
-def index():
-    """List current user's opportunities."""
-    q = request.args.get("q", "").strip()
-    status = request.args.get("status", "")
-    category = request.args.get("category", "")
-    priority = request.args.get("priority", "")
+def _parse_tags_input(tags_text):
+    """Return a cleaned, unique list of tag names."""
+    if not tags_text:
+        return []
 
-    status_values = {choice[0] for choice in STATUS_CHOICES}
-    category_values = {choice[0] for choice in CATEGORY_CHOICES}
-    priority_values = {choice[0] for choice in PRIORITY_CHOICES}
+    tag_names = []
+    seen = set()
+    for raw_tag in re.split(r"[,;\n]+", tags_text):
+        cleaned = raw_tag.strip()
+        if not cleaned:
+            continue
+        cleaned = cleaned[:50]
+        key = cleaned.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        tag_names.append(cleaned)
+    return tag_names
 
-    if status not in status_values:
-        status = ""
-    if category not in category_values:
-        category = ""
-    if priority not in priority_values:
-        priority = ""
 
-    query = Opportunity.query.filter_by(user_id=current_user.id)
-    if q:
-        search_term = f"%{q}%"
+def _save_tags(opportunity, tags_text):
+    """Assign parsed tags to an opportunity for the current user."""
+    tag_names = _parse_tags_input(tags_text)
+    existing_tags = {
+        tag.name.lower(): tag
+        for tag in OpportunityTag.query.filter_by(user_id=current_user.id).all()
+    }
+    selected_tags = []
+    for name in tag_names:
+        key = name.lower()
+        tag = existing_tags.get(key)
+        if not tag:
+            tag = OpportunityTag(name=name, user_id=current_user.id)
+            tag.save(commit=False)
+            existing_tags[key] = tag
+        selected_tags.append(tag)
+    opportunity.tags = selected_tags
+    opportunity.save()
+
+
+def _opportunity_completion_percent(opportunity):
+    """Return checklist completion percentage for an opportunity."""
+    requirement_items = list(opportunity.requirement_items)
+    total_requirements = len(requirement_items)
+    if not total_requirements:
+        return 0
+    completed_requirements = sum(
+        1 for requirement in requirement_items if requirement.is_completed
+    )
+    return round((completed_requirements / total_requirements) * 100)
+
+
+def _matches_smart_view(opportunity, smart_view, today):
+    """Return whether an opportunity matches a smart view."""
+    if not smart_view:
+        return True
+
+    has_deadline = opportunity.deadline is not None
+    days_until_deadline = (opportunity.deadline - today).days if has_deadline else None
+    completion_percent = _opportunity_completion_percent(opportunity)
+
+    if smart_view == "urgent":
+        return has_deadline and days_until_deadline <= URGENT_THIS_WEEK_DAYS
+    if smart_view == "follow_up_due":
+        outreach = opportunity.outreach
+        has_follow_up_due = outreach and outreach.outreach_status == "follow-up due"
+        return bool(has_follow_up_due)
+    if smart_view == "low_readiness":
+        return completion_percent < 50
+    if smart_view == "missing_materials":
+        return len(opportunity.materials) == 0
+    if smart_view == "missing_checklist":
+        return len(opportunity.requirement_items) == 0
+    return True
+
+
+def _capture_prefill_from_request():
+    """Build Quick Capture defaults from query parameters."""
+    selected_text = request.args.get("selected_text", "").strip()
+    details = request.args.get("details", "").strip()
+    notes = request.args.get("notes", "").strip()
+    merged_details = "\n\n".join(
+        part for part in [selected_text, details, notes] if part
+    )
+    use_ai_value = request.args.get("use_ai", "").strip().lower()
+    use_ai_requested = request.args.get("assist") == "ai"
+
+    return {
+        "title": request.args.get("title", "").strip(),
+        "organization": request.args.get("organization", "").strip(),
+        "link": (request.args.get("url") or request.args.get("link") or "").strip(),
+        "deadline_text": (
+            request.args.get("deadline_text") or request.args.get("deadline") or ""
+        ).strip(),
+        "details": merged_details,
+        "use_ai": use_ai_requested or use_ai_value in {"1", "true", "yes", "on"},
+    }
+
+
+def _capture_prompt(form):
+    """Return a structured capture prompt for optional AI assistance."""
+    sections = [
+        f"Title: {(form.title.data or '').strip()}",
+        f"Organization: {(form.organization.data or '').strip()}",
+        f"Link: {(form.link.data or '').strip()}",
+        f"Deadline text: {(form.deadline_text.data or '').strip()}",
+        f"Notes: {(form.details.data or '').strip()}",
+    ]
+    return "\n".join(sections)
+
+
+def _merge_ai_prefill(prefill, ai_result):
+    """Merge AI suggestions into deterministic capture defaults."""
+    if ai_result.get("title"):
+        prefill["title"] = ai_result["title"]
+    if ai_result.get("organization"):
+        prefill["organization"] = ai_result["organization"]
+    if ai_result.get("category"):
+        prefill["category"] = ai_result["category"]
+    if ai_result.get("deadline_text"):
+        ai_deadline = _parse_capture_deadline(ai_result["deadline_text"])
+        if ai_deadline:
+            prefill["deadline"] = ai_deadline
+    if ai_result.get("tags"):
+        prefill["tags"] = ", ".join(ai_result["tags"])
+    return prefill
+
+
+def _create_suggested_requirements(opportunity, serialized_items):
+    """Create suggested requirement items from a serialized list."""
+    if not serialized_items:
+        return 0
+
+    try:
+        checklist_items = json.loads(serialized_items)
+    except (TypeError, json.JSONDecodeError):
+        return 0
+
+    existing_titles = {
+        requirement.title.strip().lower()
+        for requirement in opportunity.requirement_items
+    }
+    created_count = 0
+    for item in checklist_items:
+        if not isinstance(item, str):
+            continue
+        cleaned = item.strip()
+        if not cleaned:
+            continue
+        key = cleaned.lower()
+        if key in existing_titles:
+            continue
+        RequirementItem.create(title=cleaned, opportunity_id=opportunity.id)
+        existing_titles.add(key)
+        created_count += 1
+    return created_count
+
+
+def _index_filters():
+    """Return validated list filters plus available tag records."""
+    filters = {
+        "q": request.args.get("q", "").strip(),
+        "status": request.args.get("status", ""),
+        "category": request.args.get("category", ""),
+        "priority": request.args.get("priority", ""),
+        "tag": request.args.get("tag", "").strip(),
+        "view": request.args.get("view", "").strip(),
+    }
+    available_tags = (
+        OpportunityTag.query.filter_by(user_id=current_user.id)
+        .order_by(OpportunityTag.name.asc())
+        .all()
+    )
+
+    valid_values = {
+        "status": {choice[0] for choice in STATUS_CHOICES},
+        "category": {choice[0] for choice in CATEGORY_CHOICES},
+        "priority": {choice[0] for choice in PRIORITY_CHOICES},
+        "view": {choice[0] for choice in SMART_VIEW_CHOICES},
+        "tag": {item.name for item in available_tags},
+    }
+    for key in ["status", "category", "priority", "view", "tag"]:
+        if filters[key] not in valid_values[key]:
+            filters[key] = ""
+    return filters, available_tags
+
+
+def _filtered_opportunity_query(filters):
+    """Return the base opportunity query after DB-friendly filters."""
+    query = Opportunity.query.filter_by(user_id=current_user.id).options(
+        selectinload(Opportunity.tags),
+        selectinload(Opportunity.materials),
+        selectinload(Opportunity.requirement_items),
+        joinedload(Opportunity.outreach),
+    )
+    if filters["q"]:
+        search_term = f"%{filters['q']}%"
         query = query.filter(
             or_(
                 Opportunity.title.ilike(search_term),
                 Opportunity.organization.ilike(search_term),
             )
         )
-    if status:
-        query = query.filter_by(status=status)
-    if category:
-        query = query.filter_by(category=category)
-    if priority:
-        query = query.filter_by(priority=priority)
+    if filters["status"]:
+        query = query.filter_by(status=filters["status"])
+    if filters["category"]:
+        query = query.filter_by(category=filters["category"])
+    if filters["priority"]:
+        query = query.filter_by(priority=filters["priority"])
+    if filters["tag"]:
+        query = query.join(Opportunity.tags).filter(
+            OpportunityTag.user_id == current_user.id,
+            OpportunityTag.name == filters["tag"],
+        )
+    return query
 
-    active_opportunities = (
-        query.filter(Opportunity.status != "archived")
-        .order_by(Opportunity.created_at.desc())
-        .all()
-    )
-    archived_opportunities = (
-        query.filter_by(status="archived").order_by(Opportunity.updated_at.desc()).all()
-    )
+
+@blueprint.route("/")
+@login_required
+def index():
+    """List current user's opportunities."""
+    today = dt.date.today()
+    filters, available_tags = _index_filters()
+    query = _filtered_opportunity_query(filters)
+    opportunities = query.order_by(
+        Opportunity.deadline.asc().nullslast(), Opportunity.updated_at.desc()
+    ).all()
+    filtered_opportunities = [
+        opportunity
+        for opportunity in opportunities
+        if _matches_smart_view(opportunity, filters["view"], today)
+    ]
+    active_opportunities = [
+        opportunity
+        for opportunity in filtered_opportunities
+        if opportunity.status != "archived"
+    ]
+    archived_opportunities = [
+        opportunity
+        for opportunity in filtered_opportunities
+        if opportunity.status == "archived"
+    ]
     filters = {
-        "q": q,
-        "status": status,
-        "category": category,
-        "priority": priority,
+        "q": filters["q"],
+        "status": filters["status"],
+        "category": filters["category"],
+        "priority": filters["priority"],
+        "tag": filters["tag"],
+        "view": filters["view"],
     }
     return render_template(
         "opportunities/index.html",
@@ -90,6 +311,8 @@ def index():
         status_choices=STATUS_CHOICES,
         category_choices=CATEGORY_CHOICES,
         priority_choices=PRIORITY_CHOICES,
+        smart_view_choices=SMART_VIEW_CHOICES,
+        available_tags=available_tags,
     )
 
 
@@ -219,6 +442,7 @@ def _build_capture_prefill(form):
         "deadline": deadline,
         "status": "saved",
         "priority": "medium",
+        "tags": "",
         "link": link or "",
         "notes": "\n\n".join(notes_parts),
     }
@@ -239,6 +463,15 @@ def _render_opportunity_create_form(form, **overrides):
         "back_label": "Back to list",
         "submit_label": "Save opportunity",
         "review_notice": None,
+        "assistance_notice": None,
+        "capture_summary": None,
+        "suggested_title": "",
+        "suggested_organization": "",
+        "suggested_category": "",
+        "suggested_category_label": "",
+        "suggested_deadline_text": "",
+        "suggested_checklist": [],
+        "suggested_tags": [],
     }
     context.update(overrides)
     return render_template("opportunities/new.html", **context)
@@ -411,7 +644,15 @@ def new():
             notes=form.notes.data or None,
             user_id=current_user.id,
         )
+        _save_tags(opportunity, form.tags.data)
         _save_outreach(opportunity, form)
+        if form.create_suggested_checklist.data:
+            created_count = _create_suggested_requirements(
+                opportunity, form.suggested_checklist_items.data
+            )
+            if created_count:
+                noun = "item" if created_count == 1 else "items"
+                flash(f"{created_count} suggested checklist {noun} added.", "success")
         flash("Opportunity added.", "success")
         return redirect(url_for("opportunities.detail", opportunity_id=opportunity.id))
     if form.errors:
@@ -423,10 +664,36 @@ def new():
 @login_required
 def capture():
     """Quickly capture rough opportunity details before full review."""
-    form = OpportunityCaptureForm()
+    if request.method == "GET" and request.args:
+        form = OpportunityCaptureForm(data=_capture_prefill_from_request())
+    else:
+        form = OpportunityCaptureForm()
     if form.validate_on_submit():
         prefill = _build_capture_prefill(form)
-        review_form = OpportunityForm(formdata=None, data=prefill)
+        ai_result = {
+            "used_ai": False,
+            "title": "",
+            "organization": "",
+            "category": "",
+            "summary": "",
+            "deadline_text": "",
+            "checklist_items": [],
+            "tags": [],
+            "reason": "",
+        }
+        if form.use_ai.data:
+            ai_result = request_ai_capture_suggestions(
+                current_app, _capture_prompt(form)
+            )
+            prefill = _merge_ai_prefill(prefill, ai_result)
+        review_form = OpportunityForm(
+            formdata=None,
+            data={
+                **prefill,
+                "create_suggested_checklist": bool(ai_result["checklist_items"]),
+                "suggested_checklist_items": json.dumps(ai_result["checklist_items"]),
+            },
+        )
         return _render_opportunity_create_form(
             review_form,
             form_action=url_for("opportunities.new"),
@@ -442,10 +709,31 @@ def capture():
                 "Quick Capture is best for saving a link, rough title, or notes "
                 "now and refining the packet details afterward."
             ),
+            assistance_notice=ai_result["reason"] if form.use_ai.data else None,
+            capture_summary=ai_result["summary"],
+            suggested_title=ai_result["title"],
+            suggested_organization=ai_result["organization"],
+            suggested_category=ai_result["category"],
+            suggested_category_label=CATEGORY_LABELS.get(ai_result["category"], ""),
+            suggested_deadline_text=ai_result["deadline_text"],
+            suggested_checklist=ai_result["checklist_items"],
+            suggested_tags=ai_result["tags"],
         )
     if form.errors:
         flash_errors(form)
-    return render_template("opportunities/capture.html", form=form)
+    capture_prefill = {
+        "title": (form.title.data or "").strip(),
+        "organization": (form.organization.data or "").strip(),
+        "link": (form.link.data or "").strip(),
+        "deadline_text": (form.deadline_text.data or "").strip(),
+        "details": (form.details.data or "").strip(),
+    }
+    return render_template(
+        "opportunities/capture.html",
+        form=form,
+        capture_source=request.args.get("source", ""),
+        capture_prefill=capture_prefill,
+    )
 
 
 @blueprint.route("/<int:opportunity_id>/")
@@ -611,6 +899,7 @@ def edit(opportunity_id):
     opportunity = _get_owned_opportunity_or_404(opportunity_id)
     outreach = opportunity.outreach
     outreach_data = {
+        "tags": ", ".join(opportunity.tag_names),
         "contact_name": outreach.contact_name if outreach else None,
         "contact_role": outreach.contact_role if outreach else None,
         "contact_method": outreach.contact_method if outreach else None,
@@ -629,6 +918,7 @@ def edit(opportunity_id):
             link=form.link.data or None,
             notes=form.notes.data or None,
         )
+        _save_tags(opportunity, form.tags.data)
         _save_outreach(opportunity, form)
         flash("Opportunity updated.", "success")
         return redirect(url_for("opportunities.index"))

@@ -38,6 +38,9 @@
                     <h4 class="h6 fw-semibold mb-1">{{ source.name }}</h4>
                     <a class="opportunity-link small d-inline-block mb-2" href="{{ source.url }}" target="_blank" rel="noopener">{{ source.url }}</a>
                     <p class="text-muted mb-0">{{ source.notes }}</p>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.capture', title=source.name, link=source.url, details=source.notes) }}">Capture from source</a>
+                    </div>
                   </div>
                 </div>
                 {% endfor %}
@@ -102,6 +105,9 @@
                 {% else %}
                 <p class="text-muted mb-0">No notes added yet.</p>
                 {% endif %}
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.capture', title=source.name, link=source.url, details=source.notes) }}">Capture from source</a>
+                </div>
               </div>
             </div>
             {% endfor %}

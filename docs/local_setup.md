@@ -38,6 +38,19 @@ The default local SQLite database path from `.env` is:
 
 If you need a clean local reset, remove `/tmp/dev.db` and run `db.create_all()` again.
 
+## Optional AI Configuration
+
+AI-assisted Quick Capture is optional. If you want to enable it locally, add environment variables such as:
+
+```text
+AI_INTAKE_ENDPOINT=<openai-compatible-chat-completions-endpoint>
+AI_INTAKE_API_KEY=<your-api-key>
+AI_INTAKE_MODEL=<your-model-name>
+AI_INTAKE_TIMEOUT=20
+```
+
+If those values are not set, LaunchPad OS falls back to the normal deterministic Quick Capture flow.
+
 ## Running the App
 
 Use the recommended local port `5001`:
@@ -61,3 +74,9 @@ PATH=.venv/bin:$PATH npm run build
 ```
 
 For active frontend work, `npm start` runs Flask and the webpack watcher together.
+
+## Browser Clipper Prototype
+
+The repository includes a lightweight extension prototype in `browser_extension/`.
+
+It is meant for local demo use and opens LaunchPad OS Quick Capture with the current tab title, URL, and selected text.

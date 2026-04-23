@@ -18,6 +18,7 @@ class TestOpportunityForm:
             deadline="2026-05-01",
             status="in progress",
             priority="high",
+            tags="summer 2026, outreach",
             contact_name="Recruiter Name",
             contact_role="University Recruiting",
             contact_method="recruiter@example.com",
@@ -150,6 +151,19 @@ class TestOpportunityForm:
         assert form.validate() is False
         assert "Enter a valid email address or URL." in form.contact_method.errors
 
+    def test_validate_accepts_tags_input(self, db):
+        """Tags are optional free-text input."""
+        form = OpportunityForm(
+            title="Example",
+            organization="Example Co",
+            category="internship",
+            status="saved",
+            priority="medium",
+            tags="summer 2026, campus research",
+        )
+
+        assert form.validate() is True
+
 
 class TestOpportunityCaptureForm:
     """Quick capture form tests."""
@@ -168,3 +182,9 @@ class TestOpportunityCaptureForm:
         assert (
             "Add at least one detail to capture an opportunity." in form.details.errors
         )
+
+    def test_validate_accepts_ai_flag(self, db):
+        """AI assist can be requested without changing validation rules."""
+        form = OpportunityCaptureForm(details="Lab opening.", use_ai=True)
+
+        assert form.validate() is True

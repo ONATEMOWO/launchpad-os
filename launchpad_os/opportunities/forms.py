@@ -3,7 +3,14 @@
 import re
 
 from flask_wtf import FlaskForm
-from wtforms import DateField, SelectField, StringField, TextAreaField
+from wtforms import (
+    BooleanField,
+    DateField,
+    HiddenField,
+    SelectField,
+    StringField,
+    TextAreaField,
+)
 from wtforms.validators import URL, DataRequired, Length, Optional, ValidationError
 
 from launchpad_os.opportunities.models import (
@@ -36,6 +43,7 @@ class OpportunityForm(FlaskForm):
         default="medium",
         validators=[DataRequired()],
     )
+    tags = StringField("Tags", validators=[Optional(), Length(max=255)])
     contact_name = StringField("Contact name", validators=[Optional(), Length(max=120)])
     contact_role = StringField(
         "Contact role or office", validators=[Optional(), Length(max=120)]
@@ -50,6 +58,8 @@ class OpportunityForm(FlaskForm):
         validators=[DataRequired()],
     )
     outreach_notes = TextAreaField("Outreach notes", validators=[Optional()])
+    create_suggested_checklist = BooleanField("Create suggested checklist")
+    suggested_checklist_items = HiddenField()
     link = StringField("Link", validators=[Optional(), URL(), Length(max=255)])
     notes = TextAreaField("Notes", validators=[Optional()])
 
@@ -80,6 +90,7 @@ class OpportunityCaptureForm(FlaskForm):
         "Deadline text or date", validators=[Optional(), Length(max=80)]
     )
     details = TextAreaField("Description or notes", validators=[Optional()])
+    use_ai = BooleanField("Use AI suggestions if available", default=False)
 
     def validate(self, extra_validators=None):
         """Require at least one field so the capture step is useful."""

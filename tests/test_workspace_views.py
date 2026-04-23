@@ -37,6 +37,8 @@ class TestWorkspaceViews:
         assert res.status_code == 200
         assert "Application Workspace" in res
         assert "Active opportunity progress" in res
+        assert "This week priorities" in res
+        assert "Readiness snapshot" in res
 
     def test_login_redirects_to_workspace(self, user, testapp):
         """Default login destination is the workspace dashboard."""
@@ -142,6 +144,7 @@ class TestWorkspaceViews:
         assert "No active opportunities yet." in res
         assert "Add opportunity" in res
         assert "Open materials vault" in res
+        assert "No urgent priorities right now." in res
 
     def test_workspace_action_digest_surfaces_key_attention_items(
         self, user, testapp, db
@@ -191,9 +194,61 @@ class TestWorkspaceViews:
 
         res = testapp.get(url_for("workspace.index"))
         digest_section = res.html.select_one("#actionDigestSection")
+        missing_checklist_section = res.html.select_one("#digestMissingChecklist")
+        missing_materials_section = res.html.select_one("#digestMissingMaterials")
 
         assert digest_section is not None
+        assert missing_checklist_section is not None
+        assert missing_materials_section is not None
         assert "Overdue Application" in digest_section.text
         assert "Due Soon Application" in digest_section.text
         assert "High Priority Application" in digest_section.text
         assert "Follow-up Opportunity" in digest_section.text
+        assert "Generate or add a starter checklist." in missing_checklist_section.text
+        assert (
+            "Link supporting materials from the vault."
+            in missing_materials_section.text
+        )
+        assert "Review now" in digest_section.text
+
+    def test_workspace_hero_surfaces_readiness_snapshot_and_priority_counts(
+        self, user, testapp, db
+    ):
+        """Hero panels surface readiness distribution and setup gaps."""
+        today = dt.date.today()
+        ready = OpportunityFactory(
+            user=user,
+            title="Ready Application",
+            deadline=today + dt.timedelta(days=20),
+        )
+        in_progress = OpportunityFactory(
+            user=user,
+            title="In Progress Application",
+            deadline=today + dt.timedelta(days=14),
+        )
+        OpportunityFactory(user=user, title="Needs Setup Application")
+        RequirementItemFactory(
+            opportunity=ready,
+            title="Resume",
+            is_completed=True,
+        )
+        RequirementItemFactory(
+            opportunity=ready,
+            title="Essay",
+            is_completed=True,
+        )
+        ready.materials.append(MaterialFactory(user=user, title="Ready Resume"))
+        RequirementItemFactory(
+            opportunity=in_progress,
+            title="Statement draft",
+            is_completed=False,
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("workspace.index"))
+
+        assert "Ready to review" in res
+        assert "Needs setup" in res
+        assert "missing checklist" in res
+        assert "missing materials" in res

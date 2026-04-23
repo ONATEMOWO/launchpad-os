@@ -4,9 +4,18 @@ import datetime as dt
 
 import pytest
 
-from launchpad_os.opportunities.models import Opportunity, OpportunityOutreach
+from launchpad_os.opportunities.models import (
+    Opportunity,
+    OpportunityOutreach,
+    OpportunityTag,
+)
 
-from .factories import OpportunityFactory, OpportunityOutreachFactory, UserFactory
+from .factories import (
+    OpportunityFactory,
+    OpportunityOutreachFactory,
+    OpportunityTagFactory,
+    UserFactory,
+)
 
 
 @pytest.mark.usefixtures("db")
@@ -92,3 +101,24 @@ class TestOpportunityOutreach:
         assert outreach.opportunity_id
         assert outreach.contact_name
         assert outreach.outreach_status == "contacted"
+
+
+@pytest.mark.usefixtures("db")
+class TestOpportunityTag:
+    """Opportunity tag tests."""
+
+    def test_tag_belongs_to_user(self):
+        """Tags are user-scoped records."""
+        user = UserFactory()
+        tag = OpportunityTag.create(name="summer 2026", user=user)
+
+        assert tag.user == user
+        assert tag in user.opportunity_tags
+
+    def test_tag_factory(self, db):
+        """Test opportunity tag factory."""
+        tag = OpportunityTagFactory()
+        db.session.commit()
+
+        assert tag.name
+        assert tag.user_id

@@ -20,9 +20,51 @@
         <div class="app-card form-card">
           <form id="quickCaptureForm" method="POST" action="" role="form">
             {{ form.csrf_token }}
+            {% if capture_source == 'clipper' %}
+            <div class="alert alert-info app-alert mb-4" role="status">
+              Browser clipper details were prefilled from the page title, URL, and any selected text that was available.
+            </div>
+            {% endif %}
+            {% if capture_prefill.title or capture_prefill.organization or capture_prefill.link or capture_prefill.details %}
+            <div class="capture-prefill-summary mb-4">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3">
+                <div>
+                  <p class="detail-label mb-2">Detected from your source</p>
+                  <p class="text-muted mb-0">Quick Capture already has enough context to prefill the review step. Add or adjust anything here before continuing.</p>
+                </div>
+                <span class="badge app-badge app-badge-soft">Prefill ready</span>
+              </div>
+              <div class="capture-prefill-grid mt-3">
+                {% if capture_prefill.title %}
+                <div class="capture-prefill-item">
+                  <span class="detail-label d-block mb-1">Title</span>
+                  <span>{{ capture_prefill.title }}</span>
+                </div>
+                {% endif %}
+                {% if capture_prefill.organization %}
+                <div class="capture-prefill-item">
+                  <span class="detail-label d-block mb-1">Organization</span>
+                  <span>{{ capture_prefill.organization }}</span>
+                </div>
+                {% endif %}
+                {% if capture_prefill.link %}
+                <div class="capture-prefill-item">
+                  <span class="detail-label d-block mb-1">Source link</span>
+                  <span class="text-break">{{ capture_prefill.link }}</span>
+                </div>
+                {% endif %}
+                {% if capture_prefill.details %}
+                <div class="capture-prefill-item">
+                  <span class="detail-label d-block mb-1">Captured text</span>
+                  <span>{{ capture_prefill.details[:180] }}{% if capture_prefill.details|length > 180 %}...{% endif %}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
             <div class="form-card-section">
               <h2 class="h5 fw-semibold mb-1">What do you know so far?</h2>
-              <p class="text-muted mb-0">Quick Capture is helpful when you only have a link, a rough title, or a few notes and want to save the opportunity before cleaning it up.</p>
+              <p class="text-muted mb-0">Quick Capture is for saving an opportunity when you only have a link, a page clip, a rough title, or a few notes. LaunchPad OS turns that into a prefilled review form so you can refine it once instead of retyping it later.</p>
             </div>
 
             <div class="row g-4">
@@ -46,6 +88,13 @@
               <div class="col-12">
                 {{ form.details.label(class_="form-label") }}
                 {{ form.details(placeholder="Paste the opportunity description, requirements, application link, or any rough notes here.", class_="form-control", rows="7") }}
+              </div>
+              <div class="col-12">
+                <div class="form-check capture-ai-toggle">
+                  {{ form.use_ai(class_="form-check-input") }}
+                  {{ form.use_ai.label(class_="form-check-label fw-semibold") }}
+                </div>
+                <small class="form-text text-muted">If AI is configured, LaunchPad OS can suggest a title, organization, category, summary, tags, and starter checklist items. If not, the normal prefilled review step still works the same way.</small>
               </div>
             </div>
 

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LaunchPad OS Clipper Settings</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #1f2937;
+        background: #f6f8fb;
+      }
+
+      .page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3rem;
+      }
+
+      .card {
+        padding: 1.5rem;
+        border: 1px solid #d9e1ea;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.06);
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.5rem;
+      }
+
+      p {
+        margin: 0 0 1rem;
+        line-height: 1.5;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      input {
+        width: 100%;
+        min-height: 2.8rem;
+        padding: 0.7rem 0.8rem;
+        font-size: 1rem;
+        border: 1px solid #cfd8e3;
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      button {
+        min-height: 2.8rem;
+        padding: 0.7rem 1rem;
+        font-weight: 600;
+        border: 1px solid #0d6efd;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .primary {
+        color: #ffffff;
+        background: #0d6efd;
+      }
+
+      .secondary {
+        color: #0d6efd;
+        background: #ffffff;
+      }
+
+      .status {
+        min-height: 1.25rem;
+        margin-top: 0.75rem;
+        color: #0f5132;
+        font-weight: 600;
+      }
+
+      .note {
+        color: #6b7280;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="card">
+        <h1>LaunchPad OS Clipper</h1>
+        <p>Set the base URL for your local LaunchPad OS app. The clipper will open Quick Capture with the current page title, URL, and selected text already filled in.</p>
+
+        <label for="appBaseUrl">LaunchPad OS base URL</label>
+        <input id="appBaseUrl" type="url" placeholder="http://127.0.0.1:5001">
+        <p class="note">Default: <code>http://127.0.0.1:5001</code></p>
+
+        <div class="actions">
+          <button class="primary" id="saveButton" type="button">Save</button>
+          <button class="secondary" id="resetButton" type="button">Reset to default</button>
+        </div>
+
+        <p class="status" id="statusMessage" aria-live="polite"></p>
+      </div>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
