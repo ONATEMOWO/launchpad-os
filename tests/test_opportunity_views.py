@@ -9,6 +9,7 @@ from launchpad_os.opportunities.models import Opportunity
 from .factories import (
     MaterialFactory,
     OpportunityFactory,
+    OpportunityOutreachFactory,
     RequirementItemFactory,
     UserFactory,
 )
@@ -358,6 +359,31 @@ class TestOpportunityViews:
         assert "Draft essay and request transcript." in res
         assert "https://example.com/fellowship" in res
 
+    def test_detail_page_shows_outreach_section(self, user, testapp, db):
+        """Opportunity detail renders saved outreach information."""
+        opportunity = OpportunityFactory(user=user, title="Research Fellowship")
+        OpportunityOutreachFactory(
+            opportunity=opportunity,
+            contact_name="Program Coordinator",
+            contact_role="Graduate Office",
+            contact_method="coordinator@example.com",
+            outreach_notes="Send follow-up after office hours.",
+            outreach_status="follow-up due",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(
+            url_for("opportunities.detail", opportunity_id=opportunity.id)
+        )
+
+        assert "Contact and follow-up" in res
+        assert "Program Coordinator" in res
+        assert "Graduate Office" in res
+        assert "coordinator@example.com" in res
+        assert "Follow-up Due" in res
+        assert "Send follow-up after office hours." in res
+
     def test_readiness_summary_renders_on_detail_page(self, user, testapp, db):
         """Opportunity detail renders the application packet summary."""
         opportunity = OpportunityFactory(
@@ -584,6 +610,30 @@ class TestOpportunityViews:
         assert opportunity.organization == "Updated Org"
         assert opportunity.status == "accepted"
         assert opportunity.priority == "high"
+
+    def test_owner_can_save_outreach_details(self, user, testapp, db):
+        """Owners can save outreach details from the opportunity edit form."""
+        opportunity = OpportunityFactory(user=user, title="Scholarship Packet")
+        db.session.commit()
+        login(testapp, user)
+        res = testapp.get(url_for("opportunities.edit", opportunity_id=opportunity.id))
+        form = res.forms[0]
+        form["contact_name"] = "Scholarship Office"
+        form["contact_role"] = "Financial Aid Advisor"
+        form["contact_method"] = "advisor@example.edu"
+        form["outreach_status"] = "follow-up due"
+        form["outreach_notes"] = "Check back after submitting the transcript."
+
+        res = form.submit().follow()
+        db.session.refresh(opportunity)
+
+        assert res.status_code == 200
+        assert opportunity.outreach is not None
+        assert opportunity.outreach.contact_name == "Scholarship Office"
+        assert opportunity.outreach.contact_role == "Financial Aid Advisor"
+        assert opportunity.outreach.contact_method == "advisor@example.edu"
+        assert opportunity.outreach.outreach_status == "follow-up due"
+        assert "Opportunity updated." in res
 
     def test_non_owner_cannot_edit_opportunity(self, user, testapp, db):
         """Users cannot edit opportunities they do not own."""

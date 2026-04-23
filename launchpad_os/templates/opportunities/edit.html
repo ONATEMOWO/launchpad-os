@@ -67,6 +67,35 @@
                 {{ form.notes(class_="form-control", rows="4") }}
               </div>
             </div>
+
+            <hr class="form-divider">
+
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">Contact and outreach</h2>
+              <p class="text-muted mb-0">Keep contact details and follow-up status current so the dashboard can surface outreach work clearly.</p>
+            </div>
+            <div class="row g-4">
+              <div class="col-md-6">
+                {{ form.contact_name.label(class_="form-label") }}
+                {{ form.contact_name(class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.contact_role.label(class_="form-label") }}
+                {{ form.contact_role(class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.contact_method.label(class_="form-label") }}
+                {{ form.contact_method(class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.outreach_status.label(class_="form-label") }}
+                {{ form.outreach_status(class_="form-select") }}
+              </div>
+              <div class="col-12">
+                {{ form.outreach_notes.label(class_="form-label") }}
+                {{ form.outreach_notes(class_="form-control", rows="4") }}
+              </div>
+            </div>
             <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
               <a class="btn btn-outline-secondary" href="{{ url_for('opportunities.index') }}">Cancel</a>
               <button class="btn btn-primary" type="submit">Save changes</button>

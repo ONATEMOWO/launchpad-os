@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Opportunity form tests."""
 
+from werkzeug.datastructures import MultiDict
+
 from launchpad_os.opportunities.forms import OpportunityCaptureForm, OpportunityForm
 
 
@@ -16,6 +18,11 @@ class TestOpportunityForm:
             deadline="2026-05-01",
             status="in progress",
             priority="high",
+            contact_name="Recruiter Name",
+            contact_role="University Recruiting",
+            contact_method="recruiter@example.com",
+            outreach_status="contacted",
+            outreach_notes="Initial outreach sent.",
             link="https://example.com/apply",
             notes="Requires resume and short essay.",
         )
@@ -106,6 +113,42 @@ class TestOpportunityForm:
 
         assert ("planning", "Preparing") in form.status.choices
         assert ("in progress", "In Progress") in form.status.choices
+
+    def test_validate_accepts_contact_url(self, db):
+        """Outreach contact field accepts URLs."""
+        form = OpportunityForm(
+            formdata=MultiDict(
+                {
+                    "title": "Example",
+                    "organization": "Example Co",
+                    "category": "internship",
+                    "status": "saved",
+                    "priority": "medium",
+                    "contact_method": "https://example.com/contact",
+                    "outreach_status": "follow-up due",
+                }
+            )
+        )
+
+        assert form.validate() is True
+
+    def test_validate_rejects_invalid_contact_method(self, db):
+        """Outreach contact field must be an email or URL."""
+        form = OpportunityForm(
+            formdata=MultiDict(
+                {
+                    "title": "Example",
+                    "organization": "Example Co",
+                    "category": "internship",
+                    "status": "saved",
+                    "priority": "medium",
+                    "contact_method": "call me maybe",
+                }
+            )
+        )
+
+        assert form.validate() is False
+        assert "Enter a valid email address or URL." in form.contact_method.errors
 
 
 class TestOpportunityCaptureForm:

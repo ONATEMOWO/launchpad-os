@@ -143,6 +143,60 @@
       </div>
     </div>
 
+    <div class="app-card detail-card outreach-card mt-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+        <div>
+          <p class="eyebrow text-primary mb-2">Outreach Tracking</p>
+          <h2 class="h4 fw-semibold mb-2">Contact and follow-up</h2>
+          <p class="text-muted mb-0">Track who you contacted, where the conversation stands, and what needs a response next.</p>
+        </div>
+        <span class="badge app-badge status-badge status-{{ outreach_status|replace(' ', '-') }}">{{ outreach_status_label }}</span>
+      </div>
+
+      {% if has_outreach %}
+      <div class="detail-grid outreach-detail-grid">
+        <div>
+          <p class="detail-label">Contact name</p>
+          <p class="detail-value">{{ outreach.contact_name or "Not added" }}</p>
+        </div>
+        <div>
+          <p class="detail-label">Role or office</p>
+          <p class="detail-value">{{ outreach.contact_role or "Not added" }}</p>
+        </div>
+        <div class="detail-grid-full">
+          <p class="detail-label">Contact email or URL</p>
+          {% if outreach.contact_method %}
+            {% if outreach.contact_method.startswith('http://') or outreach.contact_method.startswith('https://') %}
+            <a class="opportunity-link" href="{{ outreach.contact_method }}" target="_blank" rel="noopener">{{ outreach.contact_method }}</a>
+            {% else %}
+            <p class="detail-value">{{ outreach.contact_method }}</p>
+            {% endif %}
+          {% else %}
+          <p class="text-muted mb-0">No contact method saved yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="detail-notes">
+        <h3 class="h5 fw-semibold mb-3">Outreach notes</h3>
+        {% if outreach.outreach_notes %}
+        <p class="mb-0">{{ outreach.outreach_notes }}</p>
+        {% else %}
+        <p class="text-muted mb-0">No outreach notes yet. Use this space for message history, office hours, or follow-up timing.</p>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="empty-state text-center py-4">
+        <div class="empty-state-icon mx-auto mb-3">
+          <i class="fa-solid fa-envelope-open-text"></i>
+        </div>
+        <h3 class="h5 fw-semibold">No outreach tracked yet.</h3>
+        <p class="text-muted mb-4">Add a recruiter, faculty contact, or office note when this opportunity needs outreach or follow-up.</p>
+        <a class="btn btn-outline-primary app-action" href="{{ url_for('opportunities.edit', opportunity_id=opportunity.id) }}">Add outreach details</a>
+      </div>
+      {% endif %}
+    </div>
+
     <div class="app-card detail-card checklist-card mt-4">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
         <div>

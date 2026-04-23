@@ -13,6 +13,7 @@ blueprint = Blueprint(
 )
 
 DUE_SOON_DAYS = 30
+LOW_READINESS_THRESHOLD = 50
 
 
 def _deadline_context(deadline, today):
@@ -64,6 +65,8 @@ def _build_opportunity_progress(opportunities, today):
             completed_requirements < total_requirements or total_requirements == 0
         )
         deadline_context = _deadline_context(opportunity.deadline, today)
+        outreach = opportunity.outreach
+        outreach_status = outreach.outreach_status if outreach else "not contacted"
         opportunity_cards.append(
             {
                 "opportunity": opportunity,
@@ -71,10 +74,19 @@ def _build_opportunity_progress(opportunities, today):
                 "completed_requirements": completed_requirements,
                 "completion_percent": completion_percent,
                 "needs_requirements": needs_requirements,
+                "outreach_status": outreach_status,
+                "follow_up_due": outreach_status == "follow-up due",
                 **deadline_context,
             }
         )
     return opportunity_cards
+
+
+def _is_high_priority_low_readiness(card):
+    """Return whether an opportunity should appear in the priority digest."""
+    return card["opportunity"].priority == "high" and (
+        card["completion_percent"] < LOW_READINESS_THRESHOLD
+    )
 
 
 @blueprint.route("/")
@@ -103,6 +115,18 @@ def index():
     incomplete_opportunities = [
         card for card in opportunity_cards if card["needs_requirements"]
     ]
+    overdue_opportunities = [card for card in opportunity_cards if card["is_overdue"]]
+    due_soon_upcoming = [
+        card
+        for card in due_soon_opportunities
+        if card["opportunity"].deadline and not card["is_overdue"]
+    ]
+    high_priority_low_readiness = [
+        card for card in opportunity_cards if _is_high_priority_low_readiness(card)
+    ]
+    follow_up_due_opportunities = [
+        card for card in opportunity_cards if card["follow_up_due"]
+    ]
 
     return render_template(
         "workspace/index.html",
@@ -113,4 +137,8 @@ def index():
         opportunity_cards=opportunity_cards,
         due_soon_opportunities=due_soon_opportunities[:5],
         incomplete_opportunities=incomplete_opportunities[:5],
+        overdue_opportunities=overdue_opportunities[:5],
+        due_soon_upcoming=due_soon_upcoming[:5],
+        high_priority_low_readiness=high_priority_low_readiness[:5],
+        follow_up_due_opportunities=follow_up_due_opportunities[:5],
     )

@@ -18,6 +18,7 @@ from launchpad_os.opportunities.models import (
     PRIORITY_CHOICES,
     STATUS_CHOICES,
     Opportunity,
+    OpportunityOutreach,
 )
 from launchpad_os.requirements.models import RequirementItem
 from launchpad_os.utils import csv_response, flash_errors
@@ -243,6 +244,34 @@ def _render_opportunity_create_form(form, **overrides):
     return render_template("opportunities/new.html", **context)
 
 
+def _save_outreach(opportunity, form):
+    """Create, update, or clear outreach details for an opportunity."""
+    contact_name = (form.contact_name.data or "").strip() or None
+    contact_role = (form.contact_role.data or "").strip() or None
+    contact_method = (form.contact_method.data or "").strip() or None
+    outreach_notes = (form.outreach_notes.data or "").strip() or None
+    outreach_status = form.outreach_status.data or "not contacted"
+    has_outreach_details = any(
+        [contact_name, contact_role, contact_method, outreach_notes]
+    ) or (outreach_status != "not contacted")
+
+    outreach = opportunity.outreach
+    if not has_outreach_details:
+        if outreach:
+            outreach.delete()
+        return
+
+    if not outreach:
+        outreach = OpportunityOutreach(opportunity=opportunity)
+
+    outreach.contact_name = contact_name
+    outreach.contact_role = contact_role
+    outreach.contact_method = contact_method
+    outreach.outreach_notes = outreach_notes
+    outreach.outreach_status = outreach_status
+    outreach.save()
+
+
 def _deadline_packet_context(deadline, today):
     """Return deadline urgency metadata for the detail page."""
     if not deadline:
@@ -382,6 +411,7 @@ def new():
             notes=form.notes.data or None,
             user_id=current_user.id,
         )
+        _save_outreach(opportunity, form)
         flash("Opportunity added.", "success")
         return redirect(url_for("opportunities.detail", opportunity_id=opportunity.id))
     if form.errors:
@@ -424,6 +454,7 @@ def detail(opportunity_id):
     """Show full opportunity details."""
     today = dt.date.today()
     opportunity = _get_owned_opportunity_or_404(opportunity_id)
+    outreach = opportunity.outreach
     linked_materials = sorted(
         opportunity.materials,
         key=lambda material: material.updated_at,
@@ -486,9 +517,30 @@ def detail(opportunity_id):
             f"{linked_material_count} linked {noun} connected to this application."
         )
 
+    outreach_status = outreach.outreach_status if outreach else "not contacted"
+    outreach_status_label = (
+        outreach.outreach_status_label if outreach else "Not Contacted"
+    )
+    outreach_values = (
+        [
+            outreach.contact_name,
+            outreach.contact_role,
+            outreach.contact_method,
+            outreach.outreach_notes,
+            outreach.outreach_status != "not contacted",
+        ]
+        if outreach
+        else []
+    )
+    has_outreach = bool(outreach and any(outreach_values))
+
     return render_template(
         "opportunities/detail.html",
         opportunity=opportunity,
+        outreach=outreach,
+        outreach_status=outreach_status,
+        outreach_status_label=outreach_status_label,
+        has_outreach=has_outreach,
         linked_materials=linked_materials,
         requirement_items=requirement_items,
         incomplete_requirements=incomplete_requirements,
@@ -557,7 +609,15 @@ def unlink_material(opportunity_id, material_id):
 def edit(opportunity_id):
     """Edit an existing opportunity."""
     opportunity = _get_owned_opportunity_or_404(opportunity_id)
-    form = OpportunityForm(obj=opportunity)
+    outreach = opportunity.outreach
+    outreach_data = {
+        "contact_name": outreach.contact_name if outreach else None,
+        "contact_role": outreach.contact_role if outreach else None,
+        "contact_method": outreach.contact_method if outreach else None,
+        "outreach_status": outreach.outreach_status if outreach else "not contacted",
+        "outreach_notes": outreach.outreach_notes if outreach else None,
+    }
+    form = OpportunityForm(obj=opportunity, data=outreach_data)
     if form.validate_on_submit():
         opportunity.update(
             title=form.title.data,
@@ -569,6 +629,7 @@ def edit(opportunity_id):
             link=form.link.data or None,
             notes=form.notes.data or None,
         )
+        _save_outreach(opportunity, form)
         flash("Opportunity updated.", "success")
         return redirect(url_for("opportunities.index"))
     if form.errors:

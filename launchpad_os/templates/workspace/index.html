@@ -57,6 +57,13 @@
                   <span class="text-muted small">Reuse resumes, essays, recommendation notes, and drafts.</span>
                 </span>
               </a>
+              <a class="workspace-action-card" href="{{ url_for('resources.index') }}">
+                <span class="workspace-action-icon"><i class="fa-solid fa-compass"></i></span>
+                <span>
+                  <span class="fw-semibold d-block">Open resource hub</span>
+                  <span class="text-muted small">Keep trusted discovery sources close while you plan your next applications.</span>
+                </span>
+              </a>
               <a class="workspace-action-card" href="{{ url_for('opportunities.export') }}">
                 <span class="workspace-action-icon"><i class="fa-solid fa-file-arrow-down"></i></span>
                 <span>
@@ -123,6 +130,127 @@
               <p class="text-muted mb-0">Closed or paused records</p>
             </div>
             <span class="workspace-metric-icon"><i class="fa-solid fa-box-archive"></i></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-card workspace-panel mb-4" id="actionDigestSection">
+      <div class="workspace-panel-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <p class="eyebrow text-primary mb-2">Action Digest</p>
+          <h2 class="h4 fw-semibold mb-1">What needs attention next</h2>
+          <p class="text-muted mb-0">Use this panel to spot overdue work, near deadlines, low-readiness priorities, and outreach follow-ups.</p>
+        </div>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('opportunities.index') }}">Review opportunity list</a>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-3">
+          <div class="digest-card" id="digestOverdue">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div>
+                <p class="detail-label mb-1">Overdue</p>
+                <p class="text-muted small mb-0">Deadline already passed</p>
+              </div>
+              <span class="badge app-badge status-badge">{{ overdue_opportunities|length }}</span>
+            </div>
+            {% if overdue_opportunities %}
+            <div class="digest-list">
+              {% for item in overdue_opportunities %}
+              <a class="digest-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span>
+                  <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                  <span class="text-muted small">{{ item.deadline_label }}</span>
+                </span>
+                <i class="fa-solid fa-arrow-right-long text-muted"></i>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">No overdue opportunities right now.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="digest-card" id="digestDueSoon">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div>
+                <p class="detail-label mb-1">Due soon</p>
+                <p class="text-muted small mb-0">Deadlines within 30 days</p>
+              </div>
+              <span class="badge app-badge status-badge">{{ due_soon_upcoming|length }}</span>
+            </div>
+            {% if due_soon_upcoming %}
+            <div class="digest-list">
+              {% for item in due_soon_upcoming %}
+              <a class="digest-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span>
+                  <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                  <span class="text-muted small">{{ item.deadline_label }}</span>
+                </span>
+                <i class="fa-solid fa-arrow-right-long text-muted"></i>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">No upcoming deadlines need immediate attention.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="digest-card" id="digestHighPriority">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div>
+                <p class="detail-label mb-1">High priority, low readiness</p>
+                <p class="text-muted small mb-0">High-priority applications under 50% ready</p>
+              </div>
+              <span class="badge app-badge status-badge">{{ high_priority_low_readiness|length }}</span>
+            </div>
+            {% if high_priority_low_readiness %}
+            <div class="digest-list">
+              {% for item in high_priority_low_readiness %}
+              <a class="digest-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span>
+                  <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                  <span class="text-muted small">{{ item.completion_percent }}% ready</span>
+                </span>
+                <i class="fa-solid fa-arrow-right-long text-muted"></i>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">No high-priority packets are sitting at low readiness.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="digest-card" id="digestFollowUp">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+              <div>
+                <p class="detail-label mb-1">Follow-up due</p>
+                <p class="text-muted small mb-0">Outreach needs a next response</p>
+              </div>
+              <span class="badge app-badge status-badge">{{ follow_up_due_opportunities|length }}</span>
+            </div>
+            {% if follow_up_due_opportunities %}
+            <div class="digest-list">
+              {% for item in follow_up_due_opportunities %}
+              <a class="digest-item" href="{{ url_for('opportunities.detail', opportunity_id=item.opportunity.id) }}">
+                <span>
+                  <span class="fw-semibold d-block">{{ item.opportunity.title }}</span>
+                  <span class="text-muted small">Follow up with the saved contact.</span>
+                </span>
+                <i class="fa-solid fa-arrow-right-long text-muted"></i>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">No outreach follow-ups are pending.</p>
+            {% endif %}
           </div>
         </div>
       </div>

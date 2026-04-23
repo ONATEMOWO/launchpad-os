@@ -28,6 +28,15 @@ PRIORITY_CHOICES = [
     ("high", "High"),
 ]
 
+OUTREACH_STATUS_CHOICES = [
+    ("not contacted", "Not Contacted"),
+    ("contacted", "Contacted"),
+    ("replied", "Replied"),
+    ("follow-up due", "Follow-up Due"),
+]
+
+OUTREACH_STATUS_LABELS = dict(OUTREACH_STATUS_CHOICES)
+
 opportunity_materials = db.Table(
     "opportunity_materials",
     Column(
@@ -78,3 +87,41 @@ class Opportunity(PkModel):
     def status_label(self):
         """Human-readable status label for templates."""
         return STATUS_LABELS.get(self.status, self.status.title())
+
+
+class OpportunityOutreach(PkModel):
+    """Lightweight contact and outreach tracking for an opportunity."""
+
+    __tablename__ = "opportunity_outreach"
+    contact_name = Column(db.String(120), nullable=True)
+    contact_role = Column(db.String(120), nullable=True)
+    contact_method = Column(db.String(255), nullable=True)
+    outreach_notes = Column(db.Text, nullable=True)
+    outreach_status = Column(
+        db.String(30),
+        nullable=False,
+        default="not contacted",
+        server_default="not contacted",
+    )
+    opportunity_id = reference_col(
+        "opportunities",
+        nullable=False,
+        column_kwargs={"unique": True},
+    )
+    opportunity = relationship(
+        "Opportunity",
+        backref=db.backref("outreach", uselist=False, cascade="all, delete-orphan"),
+    )
+    created_at = Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    def __repr__(self):
+        """Represent instance as a unique string."""
+        return f"<OpportunityOutreach({self.outreach_status!r})>"
+
+    @property
+    def outreach_status_label(self):
+        """Human-readable outreach status label for templates."""
+        return OUTREACH_STATUS_LABELS.get(
+            self.outreach_status, self.outreach_status.title()
+        )

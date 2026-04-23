@@ -11,6 +11,7 @@ from launchpad_os import (
     opportunities,
     public,
     requirements,
+    resources,
     user,
     workspace,
 )
@@ -62,6 +63,7 @@ def register_blueprints(app):
     app.register_blueprint(opportunities.views.blueprint)
     app.register_blueprint(materials.views.blueprint)
     app.register_blueprint(requirements.views.blueprint)
+    app.register_blueprint(resources.views.blueprint)
     app.register_blueprint(workspace.views.blueprint)
     return None
 
@@ -89,8 +91,10 @@ def register_shellcontext(app):
             "db": db,
             "User": user.models.User,
             "Opportunity": opportunities.models.Opportunity,
+            "OpportunityOutreach": opportunities.models.OpportunityOutreach,
             "Material": materials.models.Material,
             "RequirementItem": requirements.models.RequirementItem,
+            "ResourceSource": resources.models.ResourceSource,
         }
 
     app.shell_context_processor(shell_context)

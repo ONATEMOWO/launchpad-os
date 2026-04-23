@@ -7,6 +7,7 @@ from flask import url_for
 from .factories import (
     MaterialFactory,
     OpportunityFactory,
+    OpportunityOutreachFactory,
     RequirementItemFactory,
     UserFactory,
 )
@@ -137,6 +138,62 @@ class TestWorkspaceViews:
 
         assert "Upcoming deadlines" in res
         assert "Checklist work" in res
+        assert "What needs attention next" in res
         assert "No active opportunities yet." in res
         assert "Add opportunity" in res
         assert "Open materials vault" in res
+
+    def test_workspace_action_digest_surfaces_key_attention_items(
+        self, user, testapp, db
+    ):
+        """Dashboard digest highlights overdue, due-soon, low-readiness, and follow-up work."""
+        today = dt.date.today()
+        OpportunityFactory(
+            user=user,
+            title="Overdue Application",
+            deadline=today - dt.timedelta(days=2),
+            priority="medium",
+        )
+        due_soon = OpportunityFactory(
+            user=user,
+            title="Due Soon Application",
+            deadline=today + dt.timedelta(days=7),
+            priority="medium",
+        )
+        high_priority = OpportunityFactory(
+            user=user,
+            title="High Priority Application",
+            deadline=today + dt.timedelta(days=20),
+            priority="high",
+        )
+        follow_up = OpportunityFactory(
+            user=user,
+            title="Follow-up Opportunity",
+            deadline=today + dt.timedelta(days=12),
+        )
+        RequirementItemFactory(
+            opportunity=due_soon,
+            title="Resume review",
+            is_completed=False,
+        )
+        RequirementItemFactory(
+            opportunity=high_priority,
+            title="Draft essay",
+            is_completed=False,
+        )
+        OpportunityOutreachFactory(
+            opportunity=follow_up,
+            outreach_status="follow-up due",
+            contact_name="Program Advisor",
+        )
+        db.session.commit()
+        login(testapp, user)
+
+        res = testapp.get(url_for("workspace.index"))
+        digest_section = res.html.select_one("#actionDigestSection")
+
+        assert digest_section is not None
+        assert "Overdue Application" in digest_section.text
+        assert "Due Soon Application" in digest_section.text
+        assert "High Priority Application" in digest_section.text
+        assert "Follow-up Opportunity" in digest_section.text

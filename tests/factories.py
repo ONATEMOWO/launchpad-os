@@ -5,8 +5,9 @@ from factory.alchemy import SQLAlchemyModelFactory
 
 from launchpad_os.database import db
 from launchpad_os.materials.models import Material
-from launchpad_os.opportunities.models import Opportunity
+from launchpad_os.opportunities.models import Opportunity, OpportunityOutreach
 from launchpad_os.requirements.models import RequirementItem
+from launchpad_os.resources.models import ResourceSource
 from launchpad_os.user.models import User
 
 
@@ -63,6 +64,37 @@ class MaterialFactory(BaseFactory):
         """Factory configuration."""
 
         model = Material
+
+
+class OpportunityOutreachFactory(BaseFactory):
+    """Opportunity outreach factory."""
+
+    opportunity = SubFactory(OpportunityFactory)
+    contact_name = "Career Office"
+    contact_role = "Coordinator"
+    contact_method = "advisor@example.com"
+    outreach_notes = "Sent initial question."
+    outreach_status = "contacted"
+
+    class Meta:
+        """Factory configuration."""
+
+        model = OpportunityOutreach
+
+
+class ResourceSourceFactory(BaseFactory):
+    """Resource source factory."""
+
+    user = SubFactory(UserFactory)
+    name = Sequence(lambda n: f"Resource Source {n}")
+    category = "research"
+    url = Sequence(lambda n: f"https://example.com/source-{n}")
+    notes = "Useful page for new opportunities."
+
+    class Meta:
+        """Factory configuration."""
+
+        model = ResourceSource
 
 
 class RequirementItemFactory(BaseFactory):

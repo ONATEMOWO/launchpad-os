@@ -4,9 +4,9 @@ import datetime as dt
 
 import pytest
 
-from launchpad_os.opportunities.models import Opportunity
+from launchpad_os.opportunities.models import Opportunity, OpportunityOutreach
 
-from .factories import OpportunityFactory, UserFactory
+from .factories import OpportunityFactory, OpportunityOutreachFactory, UserFactory
 
 
 @pytest.mark.usefixtures("db")
@@ -60,3 +60,35 @@ class TestOpportunity:
 
         assert opportunity.status == "planning"
         assert opportunity.status_label == "Preparing"
+
+
+@pytest.mark.usefixtures("db")
+class TestOpportunityOutreach:
+    """Opportunity outreach tests."""
+
+    def test_create_outreach_for_opportunity(self):
+        """Outreach records belong to a single opportunity."""
+        opportunity = OpportunityFactory()
+        outreach = OpportunityOutreach.create(
+            opportunity=opportunity,
+            contact_name="Program Coordinator",
+            outreach_status="follow-up due",
+        )
+
+        assert outreach.opportunity == opportunity
+        assert opportunity.outreach == outreach
+
+    def test_outreach_status_label_is_human_friendly(self):
+        """Outreach labels can differ from the stored values."""
+        outreach = OpportunityOutreach(outreach_status="follow-up due")
+
+        assert outreach.outreach_status_label == "Follow-up Due"
+
+    def test_outreach_factory(self, db):
+        """Test outreach factory."""
+        outreach = OpportunityOutreachFactory()
+        db.session.commit()
+
+        assert outreach.opportunity_id
+        assert outreach.contact_name
+        assert outreach.outreach_status == "contacted"

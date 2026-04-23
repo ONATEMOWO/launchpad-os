@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 """Opportunity forms."""
+import re
+
 from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, TextAreaField
-from wtforms.validators import URL, DataRequired, Length, Optional
+from wtforms.validators import URL, DataRequired, Length, Optional, ValidationError
 
 from launchpad_os.opportunities.models import (
     CATEGORY_CHOICES,
+    OUTREACH_STATUS_CHOICES,
     PRIORITY_CHOICES,
     STATUS_CHOICES,
 )
+
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class OpportunityForm(FlaskForm):
@@ -31,8 +36,38 @@ class OpportunityForm(FlaskForm):
         default="medium",
         validators=[DataRequired()],
     )
+    contact_name = StringField("Contact name", validators=[Optional(), Length(max=120)])
+    contact_role = StringField(
+        "Contact role or office", validators=[Optional(), Length(max=120)]
+    )
+    contact_method = StringField(
+        "Contact email or URL", validators=[Optional(), Length(max=255)]
+    )
+    outreach_status = SelectField(
+        "Outreach status",
+        choices=OUTREACH_STATUS_CHOICES,
+        default="not contacted",
+        validators=[DataRequired()],
+    )
+    outreach_notes = TextAreaField("Outreach notes", validators=[Optional()])
     link = StringField("Link", validators=[Optional(), URL(), Length(max=255)])
     notes = TextAreaField("Notes", validators=[Optional()])
+
+    def validate_contact_method(self, field):
+        """Allow either an email address or an HTTP(S) URL."""
+        value = (field.data or "").strip()
+        if not value:
+            return
+
+        if value.startswith(("http://", "https://")):
+            validator = URL()
+            validator(self, field)
+            return
+
+        if EMAIL_PATTERN.match(value):
+            return
+
+        raise ValidationError("Enter a valid email address or URL.")
 
 
 class OpportunityCaptureForm(FlaskForm):

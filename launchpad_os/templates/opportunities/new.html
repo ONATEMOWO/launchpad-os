@@ -72,6 +72,35 @@
                 {{ form.notes(placeholder="Requirements, next steps, or reminders", class_="form-control", rows="4") }}
               </div>
             </div>
+
+            <hr class="form-divider">
+
+            <div class="form-card-section">
+              <h2 class="h5 fw-semibold mb-1">Contact and outreach</h2>
+              <p class="text-muted mb-0">Track who to contact, what stage the outreach is in, and any follow-up notes tied to this application.</p>
+            </div>
+            <div class="row g-4">
+              <div class="col-md-6">
+                {{ form.contact_name.label(class_="form-label") }}
+                {{ form.contact_name(placeholder="Recruiter or faculty contact", class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.contact_role.label(class_="form-label") }}
+                {{ form.contact_role(placeholder="Career office, lab coordinator, program advisor", class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.contact_method.label(class_="form-label") }}
+                {{ form.contact_method(placeholder="contact@example.com or https://example.com", class_="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.outreach_status.label(class_="form-label") }}
+                {{ form.outreach_status(class_="form-select") }}
+              </div>
+              <div class="col-12">
+                {{ form.outreach_notes.label(class_="form-label") }}
+                {{ form.outreach_notes(placeholder="Who you contacted, what you asked, and what needs follow-up", class_="form-control", rows="4") }}
+              </div>
+            </div>
             <div class="form-actions d-flex flex-column flex-sm-row justify-content-end gap-2">
               <a class="btn btn-outline-secondary" href="{{ back_url|default(url_for('opportunities.index')) }}">Cancel</a>
               <button class="btn btn-primary" type="submit">{{ submit_label|default('Save opportunity') }}</button>
