@@ -12,7 +12,7 @@ env = Env()
 env.read_env()
 
 ENV = env.str("FLASK_ENV", default="production")
-DEBUG = ENV == "development"
+DEBUG = env.bool("FLASK_DEBUG", default=False)
 SQLALCHEMY_DATABASE_URI = env.str("DATABASE_URL")
 SECRET_KEY = env.str("SECRET_KEY")
 SEND_FILE_MAX_AGE_DEFAULT = env.int("SEND_FILE_MAX_AGE_DEFAULT")

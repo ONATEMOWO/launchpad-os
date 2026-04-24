@@ -234,6 +234,23 @@ Startup: db.create_all() complete. Registered tables: [...]
 
 This line is visible in Render's log output immediately after the worker starts.
 
+### Required Render environment variables
+
+| Variable | Value | Notes |
+|---|---|---|
+| `DATABASE_URL` | set by Render PostgreSQL add-on | required |
+| `SECRET_KEY` | a long random string | required |
+| `SEND_FILE_MAX_AGE_DEFAULT` | `31556926` | long cache for static assets |
+| `FLASK_ENV` | `production` or leave unset | optional; does not control debug mode |
+
+### Variables that must NOT be set on Render
+
+| Variable | Why |
+|---|---|
+| `FLASK_DEBUG` | any truthy value (`1`, `true`) enables debug mode, which activates the Flask Debug Toolbar and exposes internals |
+
+`DEBUG` defaults to `False` and is only `True` when `FLASK_DEBUG=1` is explicitly set. Do not set this variable on Render under any circumstances.
+
 ## Known Local Development Notes
 
 - The default local database path is `/tmp/dev.db`.
