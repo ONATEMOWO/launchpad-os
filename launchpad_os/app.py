@@ -36,11 +36,11 @@ def _import_models():
     db.metadata before db.create_all() runs, regardless of import order or
     deployment-specific caching behaviour.
     """
-    from launchpad_os.user import models as _user_models  # noqa: F401
     from launchpad_os.materials import models as _material_models  # noqa: F401
     from launchpad_os.opportunities import models as _opportunity_models  # noqa: F401
     from launchpad_os.requirements import models as _requirement_models  # noqa: F401
     from launchpad_os.resources import models as _resource_models  # noqa: F401
+    from launchpad_os.user import models as _user_models  # noqa: F401
 
 
 def create_app(config_object="launchpad_os.settings"):
