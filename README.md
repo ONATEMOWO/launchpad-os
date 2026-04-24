@@ -224,7 +224,15 @@ Exports are scoped to the current authenticated user and do not include another 
 
 ## Deployment
 
-LaunchPad OS is configured to deploy on Render. The app calls `db.create_all()` automatically when the server starts, so all tables are created on first boot without any manual migration step. If tables already exist, `create_all()` skips them safely. No `flask db upgrade` or separate release command is required.
+LaunchPad OS is configured to deploy on Render. The app factory explicitly imports every model module and calls `db.create_all()` during startup, so all tables are created on first boot without any manual migration step. If tables already exist, `create_all()` skips them safely. No `flask db upgrade` or separate release command is required.
+
+A startup log line confirms the initialization ran:
+
+```
+Startup: db.create_all() complete. Registered tables: [...]
+```
+
+This line is visible in Render's log output immediately after the worker starts.
 
 ## Known Local Development Notes
 

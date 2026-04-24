@@ -27,6 +27,22 @@ from launchpad_os.extensions import (
 )
 
 
+def _import_models():
+    """Explicitly import every model module so SQLAlchemy metadata is complete.
+
+    The top-level package imports in app.py reach user.models only through a
+    transitive chain (public.views -> user.models). Making every model import
+    explicit here guarantees all table definitions are registered with
+    db.metadata before db.create_all() runs, regardless of import order or
+    deployment-specific caching behaviour.
+    """
+    from launchpad_os.user import models as _user_models  # noqa: F401
+    from launchpad_os.materials import models as _material_models  # noqa: F401
+    from launchpad_os.opportunities import models as _opportunity_models  # noqa: F401
+    from launchpad_os.requirements import models as _requirement_models  # noqa: F401
+    from launchpad_os.resources import models as _resource_models  # noqa: F401
+
+
 def create_app(config_object="launchpad_os.settings"):
     """Create application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
 
@@ -40,8 +56,13 @@ def create_app(config_object="launchpad_os.settings"):
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
+    _import_models()
     with app.app_context():
         db.create_all()
+        app.logger.info(
+            "Startup: db.create_all() complete. Registered tables: %s",
+            sorted(db.metadata.tables.keys()),
+        )
     return app
 
 
