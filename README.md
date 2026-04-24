@@ -86,21 +86,7 @@ If those values are not provided, LaunchPad OS automatically falls back to the n
 
 ### 6. Initialize the local database
 
-This repo has Flask-Migrate configured, but it does not currently include a committed `migrations/` directory. For local development, the simplest setup is to create the tables directly:
-
-```bash
-flask shell
-```
-
-Then run:
-
-```python
-from launchpad_os.database import db
-db.create_all()
-exit()
-```
-
-If you want a fresh local database later, remove `/tmp/dev.db` and run `db.create_all()` again.
+No manual setup is needed. The app calls `db.create_all()` automatically during startup, so all tables are created the first time the server runs. If you want a completely fresh local database, delete `/tmp/dev.db` and restart the server.
 
 ## Run the App Locally
 
@@ -236,9 +222,14 @@ LaunchPad OS supports authenticated CSV export for user-owned records:
 
 Exports are scoped to the current authenticated user and do not include another user's data.
 
+## Deployment
+
+LaunchPad OS is configured to deploy on Render. The app calls `db.create_all()` automatically when the server starts, so all tables are created on first boot without any manual migration step. If tables already exist, `create_all()` skips them safely. No `flask db upgrade` or separate release command is required.
+
 ## Known Local Development Notes
 
 - The default local database path is `/tmp/dev.db`.
+- Tables are created automatically on startup; no manual `db.create_all()` step is needed.
 - The app uses Bootstrap and webpack-managed assets.
 - Flask-Static-Digest is part of the build process for production-style asset output.
 - Tests create and drop an in-memory SQLite database automatically.

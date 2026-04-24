@@ -40,6 +40,8 @@ def create_app(config_object="launchpad_os.settings"):
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
+    with app.app_context():
+        db.create_all()
     return app
 
 
